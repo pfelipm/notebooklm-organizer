@@ -2,7 +2,7 @@
 
 # NotebookLM Organizer 🏷️
 
-**NotebookLM Organizer** es una extensión de navegador diseñada para potenciar la organización de tu espacio de trabajo en [NotebookLM](https://notebooklm.google.com). Mediante un sistema de etiquetas de colores y filtrado avanzado, permite gestionar tus cuadernos con una experiencia de usuario fluida y completamente integrada, que se siente como una funcionalidad nativa de la plataforma.
+**NotebookLM Organizer** es una extensión de navegador diseñada para potenciar la organización de tu espacio de trabajo en [Gemini Notebook](https://notebook.google.com) (anteriormente NotebookLM). Mediante un sistema de etiquetas de colores y filtrado avanzado, permite gestionar tus cuadernos con una experiencia de usuario fluida y completamente integrada, que se siente como una funcionalidad nativa de la plataforma.
 
 ![notebookLM Organizer GIF](assets/overview.gif)
 
@@ -23,18 +23,19 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 
 - 🏷️ **Etiquetado con colores:** crea etiquetas personalizadas con una paleta de colores vibrantes para categorizar tus proyectos visualmente.
 - 🔍 **Filtrado avanzado:** localiza cuadernos al instante combinando búsqueda por texto y filtros de etiquetas con lógica **Y (AND)** u **O (OR)**.
-- 🌓 **Modo oscuro automático:** la interfaz se adapta automáticamente al tema (claro u oscuro) que tengas configurado en NotebookLM, respetando tu preferencia visual al 100%.
+- 🌓 **Modo oscuro automático:** la interfaz se adapta automáticamente al tema (claro u oscuro) que tengas configurado en Gemini Notebook, respetando tu preferencia visual al 100%.
 - 🔄 **Sincronización automática:** tus etiquetas y preferencias se sincronizan automáticamente entre todos tus dispositivos mediante tu cuenta de Chrome.
 - 💾 **Respaldo granular:** exporta e importa tu configuración en formato JSON, permitiendo elegir qué elementos restaurar.
 - 🌐 **Soporte multi-idioma:** interfaz localizada íntegramente en **español, inglés y català**, con cambio de idioma instantáneo desde la interfaz.
 - 💡 **Gestión de destacados:** por limpieza y conveniencia, la extensión oculta la vista previa limitada de cuadernos destacados en la pestaña principal "Todos" y se inhibe automáticamente en la pestaña de "Destacados".
-- ⚡ **Interfaz nativa:** diseñada para ofrecer una experiencia de uso con funciones ampliadas que se sientan como nativas de NotebookLM, sin romper tu flujo de trabajo.
+- 🚀 **Acceso rápido:** haz clic en el icono de la extensión desde cualquier página para abrir Gemini Notebook en una nueva pestaña al instante.
+- ⚡ **Interfaz nativa:** diseñada para ofrecer una experiencia de uso con funciones ampliadas que se sientan como nativas de Gemini Notebook, sin romper tu flujo de trabajo.
 
 ---
 
 ## ⚠️ Nota importante sobre la vista de lista
 
-Debido a que NotebookLM no expone identificadores únicos internos en todas sus vistas, la extensión utiliza una "huella digital" basada en metadatos para identificar cada cuaderno. 
+Debido a que Gemini Notebook no expone identificadores únicos internos en todas sus vistas, la extensión utiliza una "huella digital" basada en metadatos para identificar cada cuaderno. 
 
 Si tienes varios cuadernos con el **mismo nombre, mismo número de fuentes y misma fecha**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real.
 
@@ -124,13 +125,13 @@ Si prefieres instalarla manualmente para realizar pruebas o contribuir al códig
 3. Activa el **"Modo de desarrollador"** en la parte superior derecha.
 4. Haz clic en el botón **"Cargar descomprimida"**.
 5. Selecciona la carpeta **extension** dentro de la carpeta del proyecto que has descargado o clonado.
-6. ¡Listo! La extensión aparecerá en tu listado de extensiones y estará activa en `notebooklm.google.com`.
+6. ¡Listo! La extensión aparecerá en tu listado de extensiones y estará activa en `notebook.google.com` (y `notebooklm.google.com`).
 
 ---
 
 ## 📝 Nota sobre el mantenimiento
 
-Esta extensión está disponible de forma oficial en la **Chrome Web Store**. No obstante, dado que su funcionamiento se basa en el análisis de la estructura del DOM de la aplicación NotebookLM, y esta puede cambiar en cualquier momento sin previo aviso, el autor advierte que el mantenimiento ante cambios estructurales de Google se realizará de forma voluntaria. El coste de mantenimiento y la necesidad de adaptarla a cambios frecuentes hacen que sea un proyecto impulsado por la comunidad y el código abierto.
+Esta extensión está disponible de forma oficial en la **Chrome Web Store**. No obstante, dado que su funcionamiento se basa en el análisis de la estructura del DOM de la aplicación Gemini Notebook (NotebookLM), y esta puede cambiar en cualquier momento sin previo aviso, el autor advierte que el mantenimiento ante cambios estructurales de Google se realizará de forma voluntaria. El coste de mantenimiento y la necesidad de adaptarla a cambios frecuentes hacen que sea un proyecto impulsado por la comunidad y el código abierto.
 
 > **Importante para desarrolladores:** Si deseas publicar tu propia versión en la Store, se ha incluido el archivo **`extension/manifest.webstore.json`**. Este archivo es una versión "limpia" que **no incluye la propiedad `key`** (obligatoria para obtener un ID oficial nuevo). Para usarlo, simplemente renombra `manifest.webstore.json` a `manifest.json` justo antes de empaquetar la carpeta `extension` para su subida a la consola de desarrolladores.
 

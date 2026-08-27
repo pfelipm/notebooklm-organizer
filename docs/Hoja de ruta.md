@@ -19,3 +19,6 @@
 [X] Kit de comunicación para lanzamiento (borradores de RRSS)
 [X] Reestructuración del repositorio para facilitar la instalación (carpeta /extension)
 [X] Soporte automático para Modo Oscuro/Claro nativo de NotebookLM
+[X] Soporte para nuevo dominio notebook.google.com y notebook.google (v1.1)
+[X] Acción rápida al pulsar icono de extensión (apertura de pestaña si no está en NotebookLM) (v1.1)
+[X] Versión 1.1 preparada para publicación en Chrome Web Store

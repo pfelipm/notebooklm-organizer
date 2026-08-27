@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "1.0",
+  "version": "1.1",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqwtfhzjkLZjX16eik6UkA/hkqtEzpeWl7p8w3FcF++uqfrzBPj4eXyLPffLWrpQmBlpkE/RwyBn6ah2sMtgKiivMsT5fDogugMHnIk4xKvqdUGEiVHp2l0Gj+8b4E6KUTHtTayn1chbtXZ9QMG+F7dcocFX9eEuZpqqRPxwXkI2BSxLMPcoOFIrgfTcOyOWclr22KWg58mEDikIvNmWJg3rO6z8BGrFwUsmwudhNbecAjRamBf0WsouD1YZa5Lv/fZpf3RA8EdzAtx6XTxBzbS7L4qD4pk7l+YQ5nh1qHdN8AN3zPGglRfZXguZ7QPG0jsSUBxRQ+31Z3rinYz1CBQIDAQAB",
   "description": "__MSG_extDesc__",
   "default_locale": "en",
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
@@ -24,7 +28,9 @@
     {
       "matches": [
         "https://notebooklm.google.com/*",
-        "https://notebooklm.google/*"
+        "https://notebooklm.google/*",
+        "https://notebook.google.com/*",
+        "https://notebook.google/*"
       ],
       "js": [
         "content.js"
@@ -41,7 +47,9 @@
       ],
       "matches": [
         "https://notebooklm.google.com/*",
-        "https://notebooklm.google/*"
+        "https://notebooklm.google/*",
+        "https://notebook.google.com/*",
+        "https://notebook.google/*"
       ]
     }
   ]
