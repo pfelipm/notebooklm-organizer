@@ -2,7 +2,7 @@
 
 # NotebookLM Organizer 🏷️
 
-**NotebookLM Organizer** is a browser extension designed to enhance your workspace organization in [NotebookLM](https://notebooklm.google.com). Featuring an advanced tagging system and dynamic filtering, it allows you to manage your notebooks with a fluid, fully integrated user experience that feels like a native functionality.
+**NotebookLM Organizer** is a browser extension designed to enhance your workspace organization in [Gemini Notebook](https://notebook.google.com) (formerly NotebookLM). Featuring an advanced tagging system and dynamic filtering, it allows you to manage your notebooks with a fluid, fully integrated user experience that feels like a native functionality.
 
 ![notebookLM Organizer GIF](assets/overview.gif)
 
@@ -23,18 +23,19 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 
 - 🏷️ **Color-Coded Tags:** Create custom tags with a vibrant color palette to categorize your projects visually.
 - 🔍 **Advanced Filtering:** Find notebooks instantly by combining text search and tag filters with **AND** or **OR** logic.
-- 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in NotebookLM, fully respecting your visual preference.
+- 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in Gemini Notebook, fully respecting your visual preference.
 - 🔄 **Automatic Sync:** Your tags and preferences are automatically synced across all your devices via your Chrome account.
 - 💾 **Granular Backup:** Export and import your settings in JSON format, allowing you to choose which elements to restore.
 - 🌐 **Multi-language Support:** Interface fully localized in **English, Spanish, and Catalan**, with instant language switching from the UI.
 - 💡 **Featured Notebooks Handling:** For cleanliness and convenience, the extension hides the limited preview of featured notebooks in the main "All" tab and automatically disables itself when entering the dedicated "Featured" tab.
-- ⚡ **Native Interface:** Designed to provide an extended organization and search experience that feels like a native NotebookLM feature, without disrupting your workflow.
+- 🚀 **Quick Access:** Click the extension icon from any webpage to open Gemini Notebook in a new tab instantly.
+- ⚡ **Native Interface:** Designed to provide an extended organization and search experience that feels like a native Gemini Notebook feature, without disrupting your workflow.
 
 ---
 
 ## ⚠️ Important Note on List View
 
-Since NotebookLM does not expose internal unique identifiers in all its views, the extension uses a metadata-based "fingerprint" to identify each notebook.
+Since Gemini Notebook does not expose internal unique identifiers in all its views, the extension uses a metadata-based "fingerprint" to identify each notebook.
 
 If you have multiple notebooks with the **same name, same number of sources, and same date**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier.
 
@@ -83,13 +84,13 @@ Follow these steps to install the extension locally:
 3. Enable **"Developer mode"** in the upper right corner.
 4. Click the **"Load unpacked"** button.
 5. Select the **extension** folder within the downloaded or cloned project folder.
-6. Done! The extension will appear in your list of extensions and will be active on `notebooklm.google.com`.
+6. Done! The extension will appear in your list of extensions and will be active on `notebook.google.com` (and `notebooklm.google.com`).
 
 ---
 
 ## 📝 Note on Publishing to the Chrome Web Store
 
-Since the extension relies on analyzing the DOM structure of the NotebookLM application, which can change at any time without notice, the author prefers not to publish it to the Chrome Web Store for now. The maintenance cost and the need to adapt to frequent changes make it more practical to distribute it as an open-source project for manual installation.
+Since the extension relies on analyzing the DOM structure of the Gemini Notebook (NotebookLM) application, which can change at any time without notice, the author prefers not to publish it to the Chrome Web Store for now. The maintenance cost and the need to adapt to frequent changes make it more practical to distribute it as an open-source project for manual installation.
 
 > **Important for Publishing:** If you wish to publish your own version to the Store, the file **`extension/manifest.webstore.json`** has been included. This file is a "clean" version that **does not include the `key` property**, which is essential for Google to assign an official ID to your publication. 
 > 
