@@ -336,22 +336,24 @@ function processNewNodes() {
   // Los cuadernos que aparecen después (al volver de un cuaderno, "Ver más"...) también deben
   // respetar los filtros y la búsqueda activos
   if (toProcess.length > 0 && (activeFilters.size > 0 || searchQuery)) applyFilters();
-  if (toProcess.length > 0) syncSelectionUI();
+  if (toProcess.length > 0) {
+      syncSelectionUI();
+      fitTags(toProcess.map(({ node }) => node.querySelector('.nblm-tag-container')).filter(Boolean));
+  }
 }
 
 // 5. FUNCIONES DE INTERFAZ (UI)
+// Dibuja todas las etiquetas y el contador "+N"; fitTags decide después cuántas caben a la vista
 function renderTags(container, id) {
   container.innerHTML = '';
   if (!id || id.startsWith('collision:')) return;
   const tags = notebookTags[id] || [];
-  const isListView = container.closest('tr, [role="row"]') !== null;
-  const limit = isListView ? 4 : 2;
 
-  tags.slice(0, limit).forEach(tag => container.appendChild(createTagElement(tag, id)));
-  if (tags.length > limit) {
+  tags.forEach(tag => container.appendChild(createTagElement(tag, id)));
+  if (tags.length > 0) {
       const moreEl = document.createElement('span');
       moreEl.className = 'nblm-more-tags';
-      moreEl.innerText = `+${tags.length - limit}`;
+      moreEl.style.display = 'none';
       const isPinned = activeTooltip?.dataset.id === id && activeTooltip?.dataset.sticky === 'true';
       moreEl.title = isPinned ? t('tooltip_close_tags') : t('tooltip_more_tags');
       moreEl.onclick = (e) => { 
@@ -477,6 +479,7 @@ function setSelectionMode(on) {
     document.querySelector('.nblm-selection-floatbar')?.remove();
     if (on) document.body.appendChild(createSelectionBar());
     syncSelectionUI();
+    fitTags(); // En la vista de lista, la casilla desplaza las etiquetas y reduce su espacio
 }
 
 // Barra flotante inferior: siempre visible al desplazarse por listas largas y sin mover el contenido
@@ -1125,6 +1128,62 @@ function applyFilters(scan = scanNotebooks()) {
   });
   // Fase de escritura
   decisions.forEach(({ node, display }) => { if (node.style.display !== display) node.style.display = display; });
+  fitTags(); // Los cuadernos que pasan a verse pueden no haberse ajustado aún
+}
+
+// Muestra en cada cuaderno tantas etiquetas como caben en su espacio y agrupa el resto en "+N".
+// Tres fases para forzar solo dos cálculos de maquetación: mostrar todo, medir todo y ocultar.
+const TAG_GAP = 6; // Igual que el gap de .nblm-tag-container
+function fitTags(containers = document.querySelectorAll('.nblm-processed .nblm-tag-container')) {
+    const items = [...containers].map(container => ({
+        container,
+        chips: [...container.querySelectorAll(':scope > .nblm-tag')],
+        more: container.querySelector(':scope > .nblm-more-tags')
+    })).filter(item => item.chips.length > 0);
+
+    // 1. Escritura: todo visible para poder medirlo. En la vista de lista el contenedor sale del flujo
+    //    mientras se mide, porque una celda de tabla se ensancharía para dar cabida a todas las etiquetas
+    items.forEach(({ container, chips, more }) => {
+        if (container.closest('td, [role="row"]')) container.style.position = 'absolute';
+        chips.forEach(chip => { chip.style.display = ''; });
+        more.textContent = `+${chips.length}`;
+        more.style.display = '';
+    });
+
+    // 2. Lectura: espacio disponible (sin invadir el globo de cuaderno compartido) y anchos
+    const plans = items.map(item => {
+        const { container, chips, more } = item;
+        const box = container.getBoundingClientRect();
+        const parent = container.parentElement;
+        const parentBox = parent.getBoundingClientRect();
+        if (parentBox.width === 0) return null; // Cuaderno oculto por filtros: se ajustará al mostrarse
+        let available = parentBox.right - parseFloat(getComputedStyle(parent).paddingRight) - box.left;
+        const globe = parent.querySelector('.icon-container');
+        if (globe) {
+            const g = globe.getBoundingClientRect();
+            if (g.width > 0 && g.top < box.bottom && g.bottom > box.top) available = Math.min(available, g.left - 8 - box.left);
+        }
+        return { item, available, widths: chips.map(c => c.getBoundingClientRect().width), moreWidth: more.getBoundingClientRect().width };
+    });
+
+    // 3. Escritura: el contenedor vuelve al flujo; tantas como quepan (al menos una) y el resto en "+N"
+    items.forEach(({ container }) => { container.style.position = ''; });
+    plans.forEach(plan => {
+        if (!plan) return;
+        const { item: { chips, more }, available, widths, moreWidth } = plan;
+        let visible = 0, used = 0;
+        for (let i = 0; i < widths.length; i++) {
+            const next = used + (i > 0 ? TAG_GAP : 0) + widths[i];
+            const remaining = widths.length - (i + 1);
+            const needed = next + (remaining > 0 ? TAG_GAP + moreWidth : 0);
+            if (needed > available && visible > 0) break;
+            visible = i + 1; used = next;
+        }
+        chips.forEach((chip, i) => { chip.style.display = i < visible ? '' : 'none'; });
+        const hidden = chips.length - visible;
+        more.textContent = `+${hidden}`;
+        more.style.display = hidden > 0 ? '' : 'none';
+    });
 }
 
 function showFullTagsTooltip(anchor, id, sticky) {
@@ -1273,6 +1332,8 @@ function init() {
   window.addEventListener('click', handleSelectionClick, true);
   window.addEventListener('keydown', handleSelectionKeys, true);
   window.addEventListener('mousedown', handleSelectionMouseDown, true);
+  let resizeTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => fitTags(), 150); });
   document.addEventListener('mousedown', (e) => {
       const btn = e.target.closest('.project-button-more, button[aria-haspopup="menu"], button[aria-label*="Menú"]');
       if (btn) {

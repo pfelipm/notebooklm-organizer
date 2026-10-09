@@ -81,6 +81,27 @@ body.dark-theme {
   pointer-events: auto;
 }
 
+/* Las etiquetas conservan su ancho natural: fitTags decide cuántas caben y agrupa el resto en "+N"
+   (si pudieran encogerse, flexbox las comprimiría y truncaría en lugar de dejar sitio al contador) */
+.nblm-tag-container > .nblm-tag {
+  flex-shrink: 0;
+}
+
+/* Tarjetas de "Cuadernos recientes". Google lleva título y fecha al fondo de la tarjeta, con la fecha a
+   la altura del globo de cuaderno compartido (caja de 24px a 28px del borde inferior). Con etiquetas,
+   estas ocupan esa última línea alineadas con el globo (-4px compensa el relleno inferior de 32px) y
+   título y fecha suben lo justo, sin comprimirse. Sin etiquetas, la tarjeta queda como la diseña Google. */
+.my-projects-container project-button mat-card > .nblm-tag-container {
+  height: 24px;
+  padding: 0;
+  margin: 8px 0 -4px;
+  flex-shrink: 0;
+}
+
+.my-projects-container project-button mat-card > .nblm-tag-container:empty {
+  display: none;
+}
+
 .mat-mdc-cell .nblm-tag-container, td .nblm-tag-container {
     margin-top: 2px;
     padding: 0;
