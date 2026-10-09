@@ -26,6 +26,7 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 - ✅ **Bulk Tagging:** Select several notebooks (click, Shift+click, or "Select visible") and add or remove tags on all of them at once, with undo.
 - ⭐ **Priority Tags:** Star the tags you always want to see first on every notebook.
 - 📐 **Space-Aware Tags:** Each notebook shows as many tags as fit, grouping the rest under "+N", in both grid and list views.
+- 📁 **Works with Collections:** Inside each Gemini Notebook collection you get search, filters, bulk tagging, and each notebook's tags. Collections and tags complement each other: collections group notebooks like folders, while tags classify them across groups and can be combined in filters.
 - 🎛️ **Full Management Panel:** Create, rename, color, and delete tags while seeing how many notebooks use each one, with a quick filter, automatic text contrast, a synced storage meter, and full keyboard support.
 - 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in Gemini Notebook, fully respecting your visual preference.
 - 🔄 **Automatic Sync:** Your tags and preferences are automatically synced across all your devices via your Chrome account.

@@ -87,12 +87,14 @@ body.dark-theme {
   flex-shrink: 0;
 }
 
-/* Tarjetas de "Cuadernos recientes" y "Fijados". Google lleva título y fecha al fondo de la tarjeta, con la fecha a
+/* Tarjetas de "Cuadernos recientes", "Fijados" y el interior de las colecciones (misma geometría).
+   Google lleva título y fecha al fondo de la tarjeta, con la fecha a
    la altura del globo de cuaderno compartido (caja de 24px a 28px del borde inferior). Con etiquetas,
    estas ocupan esa última línea alineadas con el globo (-4px compensa el relleno inferior de 32px) y
    título y fecha suben lo justo, sin comprimirse. Sin etiquetas, la tarjeta queda como la diseña Google. */
 .my-projects-container project-button mat-card > .nblm-tag-container,
-.pinned-projects-container project-button mat-card > .nblm-tag-container {
+.pinned-projects-container project-button mat-card > .nblm-tag-container,
+.collection-expanded-section project-button mat-card > .nblm-tag-container {
   height: 24px;
   padding: 0;
   margin: 8px 0 -4px;
@@ -100,7 +102,8 @@ body.dark-theme {
 }
 
 .my-projects-container project-button mat-card > .nblm-tag-container:empty,
-.pinned-projects-container project-button mat-card > .nblm-tag-container:empty {
+.pinned-projects-container project-button mat-card > .nblm-tag-container:empty,
+.collection-expanded-section project-button mat-card > .nblm-tag-container:empty {
   display: none;
 }
 

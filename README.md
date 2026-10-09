@@ -26,6 +26,7 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 - ✅ **Etiquetado múltiple:** selecciona varios cuadernos (clic, Mayús+clic o «Seleccionar visibles») y aplica o quita etiquetas a todos de una vez, con opción de deshacer.
 - ⭐ **Etiquetas prioritarias:** marca con una estrella las etiquetas que quieres ver siempre primero en cada cuaderno.
 - 📐 **Etiquetas ajustadas al espacio:** cada cuaderno muestra tantas etiquetas como caben, agrupando el resto en «+N», tanto en la vista de cuadrícula como en la de lista.
+- 📁 **Compatible con las colecciones:** dentro de cada colección de Gemini Notebook dispones de la búsqueda, los filtros, el etiquetado múltiple y las etiquetas de cada cuaderno. Colecciones y etiquetas se complementan: las primeras agrupan los cuadernos como carpetas y las etiquetas permiten clasificarlos de forma transversal y combinarlas en filtros.
 - 🎛️ **Panel de gestión completo:** crea, renombra, colorea y elimina etiquetas viendo cuántos cuadernos tiene cada una, con filtro rápido, contraste automático del texto, medidor del almacenamiento sincronizado y uso completo con teclado.
 - 🌓 **Modo oscuro automático:** la interfaz se adapta automáticamente al tema (claro u oscuro) que tengas configurado en Gemini Notebook, respetando tu preferencia visual al 100%.
 - 🔄 **Sincronización automática:** tus etiquetas y preferencias se sincronizan automáticamente entre todos tus dispositivos mediante tu cuenta de Chrome.

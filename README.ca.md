@@ -26,6 +26,7 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 - ✅ **Etiquetatge múltiple:** selecciona diversos quaderns (clic, Maj+clic o «Selecciona els visibles») i afegeix o treu etiquetes a tots alhora, amb opció de desfer.
 - ⭐ **Etiquetes prioritàries:** marca amb una estrella les etiquetes que vols veure sempre primer a cada quadern.
 - 📐 **Etiquetes ajustades a l'espai:** cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en «+N», tant a la vista de quadrícula com a la de llista.
+- 📁 **Compatible amb les col·leccions:** dins de cada col·lecció de Gemini Notebook disposes de la cerca, els filtres, l'etiquetatge múltiple i les etiquetes de cada quadern. Col·leccions i etiquetes es complementen: les primeres agrupen els quaderns com a carpetes i les etiquetes permeten classificar-los de manera transversal i combinar-les en filtres.
 - 🎛️ **Tauler de gestió complet:** crea, canvia el nom, acoloreix i elimina etiquetes veient quants quaderns té cadascuna, amb filtre ràpid, contrast automàtic del text, mesurador de l'emmagatzematge sincronitzat i ús complet amb teclat.
 - 🌓 **Mode fosc automàtic:** la interfície s'adapta automàticament al tema (clar o fosc) que tinguis configurat a Gemini Notebook, respectant la teva preferència visual al 100%.
 - 🔄 **Sincronització automàtica:** les teves etiquetes i preferències es sincronitzen automàticament entre tots els teus dispositius mitjançant el teu compte de Chrome.

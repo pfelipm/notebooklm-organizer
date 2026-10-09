@@ -764,9 +764,17 @@ function refreshInjectedTexts() {
     }
 }
 
-// Sección principal de cuadernos ("Cuadernos recientes"): la barra va justo antes de ella.
-// En vista de lista, "Fijados" también es un .my-projects-container, pero con cabecera de fijados.
+// Elemento antes del cual va la barra:
+// - Dentro de una colección: justo después de su cabecera (título y "Editar"), sobre los cuadernos.
+// - En las pestañas con lista de cuadernos: antes de la sección principal ("Cuadernos recientes",
+//   "Mis cuadernos"...). En vista de lista, "Fijados" también es un .my-projects-container, pero con
+//   cabecera de fijados.
 function findToolsAnchor() {
+  const collectionHeader = document.querySelector('.collection-expanded-section > .collection-expanded-header');
+  if (collectionHeader) {
+      return [...collectionHeader.parentElement.children]
+          .find(child => child !== collectionHeader && !child.classList.contains('nblm-tools-container')) || null;
+  }
   const container = document.querySelector('.all-projects-container');
   if (!container) return null;
   return [...container.querySelectorAll(':scope > .my-projects-container')]
@@ -786,13 +794,21 @@ function injectSearchTools() {
       const anchor = findToolsAnchor();
       if (anchor && existing.nextElementSibling !== anchor) anchor.before(existing);
       updateTabContext();
+      // Barra que ha quedado oculta (Google conserva la vista anterior sin mostrarla): sin modo selección
+      if (selectionMode && !existing.checkVisibility()) setSelectionMode(false);
       return;
   }
+  const anchor = findToolsAnchor();
   const featured = document.querySelector('.featured-projects-container');
   const listHeader = document.querySelector('.notebook-list-header') || document.querySelector('.projects-container-header');
-  // Nunca dentro de menús o diálogos de Google (capa .cdk-overlay-container)
-  const mainContent = document.querySelector('.all-projects-container') || document.querySelector('main:not(.cdk-overlay-container main)');
-  if (!featured && !listHeader && !mainContent) return;
+  // Sin recurrir a un <main> genérico: Google los usa en otros sitios (p. ej., el teclado de emojis,
+  // precargado y oculto en las colecciones), y la barra acabaría invisible dentro de ellos
+  const mainContent = document.querySelector('.all-projects-container');
+  if (!anchor && !featured && !listHeader && !mainContent) {
+      // Pantalla sin lista de cuadernos (p. ej., la lista de colecciones): sin barra ni modo selección
+      if (selectionMode) setSelectionMode(false);
+      return;
+  }
   const tools = document.createElement('div');
   tools.className = 'nblm-tools-container';
   tools.innerHTML = `
@@ -814,7 +830,6 @@ function injectSearchTools() {
   };
   tools.querySelector('.nblm-select-btn').onclick = () => setSelectionMode(!selectionMode);
   tools.querySelector('.nblm-manage-btn:not(.nblm-select-btn)').onclick = showManagementModal;
-  const anchor = findToolsAnchor();
   if (anchor) anchor.before(tools);
   else if (featured) featured.insertAdjacentElement('afterend', tools);
   else if (listHeader) listHeader.insertAdjacentElement('afterend', tools);
