@@ -52,8 +52,40 @@ async function loadLanguage(lang) {
     }
 }
 
+function escapeHTML(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // 2. PERSISTENCIA Y DATOS
 let saveTimeout = null;
+
+// Chrome Sync limita cada elemento a 8192 bytes, medidos sobre JSON.stringify(valor) + clave.
+// Al serializar de nuevo un texto JSON, las comillas y barras se escapan (2 bytes) y los
+// caracteres no ASCII pueden ocupar hasta 6 bytes (\uXXXX), así que medimos el coste real.
+const SYNC_CHUNK_BUDGET = 8000;
+
+function splitIntoSyncChunks(str) {
+    const chunks = [];
+    let current = '';
+    let cost = 2; // Comillas que envuelven el valor serializado
+    for (const ch of str) { // Iteración por punto de código: nunca partimos pares sustitutos
+        const code = ch.codePointAt(0);
+        let chCost;
+        if (ch === '"' || ch === '\\') chCost = 2;
+        else if (code < 0x20) chCost = 6;
+        else if (code < 0x80) chCost = 1;
+        else chCost = 6 * ch.length;
+        if (cost + chCost > SYNC_CHUNK_BUDGET) {
+            chunks.push(current);
+            current = '';
+            cost = 2;
+        }
+        current += ch;
+        cost += chCost;
+    }
+    chunks.push(current);
+    return chunks;
+}
 
 function sanitizeData() {
     Object.keys(notebookTags).forEach(id => {
@@ -86,19 +118,21 @@ function saveAllData() {
             chrome.storage.local.set(fullData);
         }
 
-        const CHUNK_SIZE = 7500;
+        const chunkList = splitIntoSyncChunks(jsonString);
         const chunks = {};
-        for (let i = 0; i < Math.ceil(jsonString.length / CHUNK_SIZE); i++) {
-            chunks[`_chunk_${i}`] = jsonString.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-        }
-        chunks['_chunk_count'] = Math.ceil(jsonString.length / CHUNK_SIZE);
+        chunkList.forEach((chunk, i) => { chunks[`_chunk_${i}`] = chunk; });
+        chunks['_chunk_count'] = chunkList.length;
 
-        chrome.storage.sync.get(null, (allSyncData) => {
-            const keysToRemove = Object.keys(allSyncData).filter(k => k.startsWith('_chunk_'));
-            chrome.storage.sync.remove(keysToRemove, () => {
-                chrome.storage.sync.set(chunks, () => {
-                    if (chrome.runtime.lastError) console.error("Error crítico en Sync:", chrome.runtime.lastError.message);
-                });
+        // Escribimos primero y solo después eliminamos los fragmentos sobrantes:
+        // si la escritura falla (cuota), los datos anteriores de la nube quedan intactos.
+        chrome.storage.sync.set(chunks, () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error crítico en Sync:", chrome.runtime.lastError.message);
+                return;
+            }
+            chrome.storage.sync.get(null, (allSyncData) => {
+                const staleKeys = Object.keys(allSyncData).filter(k => /^_chunk_\d+$/.test(k) && !(k in chunks));
+                if (staleKeys.length > 0) chrome.storage.sync.remove(staleKeys);
             });
         });
         saveTimeout = null;
@@ -106,7 +140,70 @@ function saveAllData() {
 }
 
 function getTagColor(tagName) {
-    return tagConfig[tagName]?.color || '#1a73e8';
+    const color = tagConfig[tagName]?.color;
+    // Validamos el formato: el color se inserta en atributos HTML y puede venir de un JSON importado
+    return /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#1a73e8';
+}
+
+// Texto blanco u oscuro según cuál contraste más con el fondo (luminancia relativa WCAG)
+const DARK_TEXT = '#202124';
+function getContrastText(hex) {
+    const luminance = (h) => {
+        const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
+            .map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const bg = luminance(hex);
+    const contrastWhite = 1.05 / (bg + 0.05);
+    const contrastDark = (bg + 0.05) / (luminance(DARK_TEXT) + 0.05);
+    return contrastWhite >= contrastDark ? '#ffffff' : DARK_TEXT;
+}
+
+const COLOR_NAME_KEYS = {
+    '#1a73e8': 'color_blue', '#d93025': 'color_red', '#188038': 'color_green', '#f9ab00': 'color_yellow',
+    '#e37400': 'color_orange', '#9334e6': 'color_purple', '#0097a7': 'color_teal', '#607d8b': 'color_grey'
+};
+
+// Iconos Material (Apache 2.0) en línea: se ven igual en todos los sistemas, a diferencia de los emojis
+const ICON_PATHS = {
+    download: 'M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z',
+    upload: 'M5 20h14v-2H5v2zm0-10h4v6h6v-6h4l-7-7-7 7z',
+    close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+    delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+    warning: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
+    expand: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
+    search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'
+};
+function icon(name, size = 18) {
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" focusable="false"><path fill="currentColor" d="${ICON_PATHS[name]}"/></svg>`;
+}
+
+function countNotebooksWithTag(tag) {
+    return Object.values(notebookTags).filter(tags => tags.includes(tag)).length;
+}
+
+function formatNotebookCount(n) {
+    if (n === 0) return t('tag_count_zero');
+    return n === 1 ? t('tag_count_one') : t('tag_count_other', n);
+}
+
+// Cierra un diálogo con Escape solo si es el que está encima del todo. El listener se
+// retira solo cuando el diálogo ya no está en la página.
+function closeOnEscape(overlay, onClose) {
+    const handler = (e) => {
+        if (!overlay.isConnected) { document.removeEventListener('keydown', handler, true); return; }
+        if (e.key !== 'Escape') return;
+        // En un nombre a medio editar, Escape deshace el cambio (lo gestiona el propio campo)
+        const target = e.target;
+        if (target.classList?.contains('nblm-tag-edit-input') && target.value !== target.defaultValue) return;
+        const overlays = document.querySelectorAll('.nblm-modal-overlay');
+        if (overlays[overlays.length - 1] !== overlay) return;
+        e.stopPropagation();
+        document.removeEventListener('keydown', handler, true);
+        onClose();
+    };
+    document.addEventListener('keydown', handler, true);
 }
 
 function normalizeString(str) {
@@ -167,47 +264,72 @@ function getResolvedId(notebook, isCollision = false) {
 }
 
 // 4. LÓGICA DE PROCESAMIENTO
+const NOTEBOOK_ROW_SELECTOR = 'project-button, tr, [role="row"]';
+
+function isHeaderRow(node) {
+    return node.querySelector('th') || node.classList.contains('mat-mdc-header-row');
+}
+
+// Recorre todos los cuadernos UNA sola vez y calcula su huella y cuántas veces aparece cada una.
+// Solo lee del DOM (sin escrituras intercaladas), así el navegador maqueta la página una única vez.
+function scanNotebooks() {
+    const fpByNode = new Map();
+    const fpCounts = new Map();
+    document.querySelectorAll(NOTEBOOK_ROW_SELECTOR).forEach(node => {
+        if (isHeaderRow(node)) return;
+        const fp = getNotebookFingerprint(node);
+        fpByNode.set(node, fp);
+        if (fp) fpCounts.set(fp, (fpCounts.get(fp) || 0) + 1);
+    });
+    const isCollision = (node) => {
+        const fp = fpByNode.has(node) ? fpByNode.get(node) : getNotebookFingerprint(node);
+        return !!fp && fpCounts.get(fp) > 1;
+    };
+    return { fpByNode, isCollision };
+}
+
 function processNewNodes() {
   const newNodes = document.querySelectorAll('project-button:not(.nblm-processed), tr[mat-row]:not(.nblm-processed), [role="row"]:not(.nblm-processed)');
   if (newNodes.length === 0) return;
 
-  const allNodes = document.querySelectorAll('project-button, tr[mat-row], [role="row"]');
-  const fpCounts = {};
-  allNodes.forEach(node => {
-      if (node.querySelector('th') || node.classList.contains('mat-mdc-header-row')) return;
-      const fp = getNotebookFingerprint(node);
-      if (fp) fpCounts[fp] = (fpCounts[fp] || 0) + 1;
-  });
+  const scan = scanNotebooks();
 
+  // Fase de lectura: resolvemos los IDs de todos los nodos nuevos antes de tocar el DOM
+  const toProcess = [];
   newNodes.forEach(node => {
-    if (node.querySelector('th') || node.classList.contains('mat-mdc-header-row') || node.innerText.trim() === "") return;
-    const fp = getNotebookFingerprint(node);
-    const isCollision = fpCounts[fp] > 1;
+    if (isHeaderRow(node) || node.innerText.trim() === "") return;
+    const isCollision = scan.isCollision(node);
     const id = getResolvedId(node, isCollision);
-
-    if (id) {
-        node.classList.add('nblm-processed');
-        if (isCollision) {
-            const warnIcon = document.createElement('span');
-            warnIcon.className = 'nblm-collision-warning';
-            warnIcon.innerText = '⚠️';
-            warnIcon.title = t('alert_collision_title');
-            const titleEl = node.querySelector('.project-button-title, .project-table-title');
-            if (titleEl) titleEl.appendChild(warnIcon);
-        }
-        const tagContainer = document.createElement('div');
-        tagContainer.className = 'nblm-tag-container';
-        const target = node.querySelector('mat-card') || node.querySelector('.mat-column-title') || node;
-        target.appendChild(tagContainer);
-        renderTags(tagContainer, id);
-    }
+    if (id) toProcess.push({ node, id, isCollision });
   });
+
+  // Fase de escritura
+  toProcess.forEach(({ node, id, isCollision }) => {
+    node.classList.add('nblm-processed');
+    if (isCollision) {
+        const warnIcon = document.createElement('span');
+        warnIcon.className = 'nblm-collision-warning';
+        warnIcon.innerText = '⚠️';
+        warnIcon.title = t('alert_collision_title');
+        const titleEl = node.querySelector('.project-button-title, .project-table-title');
+        if (titleEl) titleEl.appendChild(warnIcon);
+    }
+    const tagContainer = document.createElement('div');
+    tagContainer.className = 'nblm-tag-container';
+    const target = node.querySelector('mat-card') || node.querySelector('.mat-column-title') || node;
+    target.appendChild(tagContainer);
+    renderTags(tagContainer, id);
+  });
+
+  // Los cuadernos que aparecen después (al volver de un cuaderno, "Ver más"...) también deben
+  // respetar los filtros y la búsqueda activos
+  if (toProcess.length > 0 && (activeFilters.size > 0 || searchQuery)) applyFilters();
 }
 
 // 5. FUNCIONES DE INTERFAZ (UI)
 function renderTags(container, id) {
   container.innerHTML = '';
-  if (id.startsWith('collision:')) return;
+  if (!id || id.startsWith('collision:')) return;
   const tags = notebookTags[id] || [];
   const isListView = container.closest('tr, [role="row"]') !== null;
   const limit = isListView ? 4 : 2;
@@ -232,7 +354,8 @@ function createTagElement(tag, id, inTooltip = false) {
     const tagEl = document.createElement('span');
     tagEl.className = 'nblm-tag';
     tagEl.style.backgroundColor = getTagColor(tag);
-    tagEl.innerHTML = `<span>${tag}</span><span class="remove-tag">×</span>`;
+    tagEl.style.color = getContrastText(getTagColor(tag));
+    tagEl.innerHTML = `<span>${escapeHTML(tag)}</span><span class="remove-tag">×</span>`;
     tagEl.querySelector('.remove-tag').onclick = (e) => { e.stopPropagation(); removeTagFromNotebook(id, tag); };
     if (!inTooltip) {
         tagEl.onmouseenter = () => { if (tooltipTimeout) clearTimeout(tooltipTimeout); showFullTagsTooltip(tagEl, id, false); };
@@ -276,6 +399,7 @@ function showAlertDialog(icon, title, message) {
         </div>
     `;
     overlay.querySelector('.nblm-alert-button').onclick = () => overlay.remove();
+    closeOnEscape(overlay, () => overlay.remove());
     document.body.appendChild(overlay);
 }
 
@@ -301,17 +425,17 @@ function removeTagFromNotebook(id, tag) {
 }
 
 function updateUI() {
+  const scan = scanNotebooks();
+  // Fase de lectura: resolvemos los IDs de todos los cuadernos procesados
+  const items = [];
   document.querySelectorAll('.nblm-processed').forEach(node => {
     const container = node.querySelector('.nblm-tag-container');
-    if (container) {
-        const fp = getNotebookFingerprint(node);
-        const all = document.querySelectorAll('project-button, tr, [role="row"]');
-        let count = 0;
-        all.forEach(r => { if (getNotebookFingerprint(r) === fp) count++; });
-        renderTags(container, getResolvedId(node, count > 1));
-    }
+    if (container) items.push({ container, id: getResolvedId(node, scan.isCollision(node)) });
   });
-  renderFilterTags(); applyFilters();
+  // Fase de escritura
+  items.forEach(({ container, id }) => renderTags(container, id));
+  refreshTooltip();
+  renderFilterTags(); applyFilters(scan);
 }
 
 function updateTabContext() {
@@ -336,14 +460,33 @@ function refreshInjectedTexts() {
     }
 }
 
+// Sección principal de cuadernos ("Cuadernos recientes"): la barra va justo antes de ella.
+// En vista de lista, "Fijados" también es un .my-projects-container, pero con cabecera de fijados.
+function findToolsAnchor() {
+  const container = document.querySelector('.all-projects-container');
+  if (!container) return null;
+  return [...container.querySelectorAll(':scope > .my-projects-container')]
+      .find(section => !section.querySelector('.pinned-projects-header')) || null;
+}
+
 function injectSearchTools() {
-  if (document.querySelector('.nblm-tools-container')) {
+  const existing = document.querySelector('.nblm-tools-container');
+  // Dentro de un cuaderno no hay lista que organizar (y su selector de emojis es un <main>)
+  if (location.pathname.includes('/notebook/')) {
+      existing?.remove();
+      return;
+  }
+  if (existing) {
+      // Google reordena las secciones al cambiar entre cuadrícula y lista: recolocamos la barra
+      const anchor = findToolsAnchor();
+      if (anchor && existing.nextElementSibling !== anchor) anchor.before(existing);
       updateTabContext();
       return;
   }
   const featured = document.querySelector('.featured-projects-container');
   const listHeader = document.querySelector('.notebook-list-header') || document.querySelector('.projects-container-header');
-  const mainContent = document.querySelector('.all-projects-container') || document.querySelector('main');
+  // Nunca dentro de menús o diálogos de Google (capa .cdk-overlay-container)
+  const mainContent = document.querySelector('.all-projects-container') || document.querySelector('main:not(.cdk-overlay-container main)');
   if (!featured && !listHeader && !mainContent) return;
   const tools = document.createElement('div');
   tools.className = 'nblm-tools-container';
@@ -354,9 +497,19 @@ function injectSearchTools() {
     </div>
     <div class="nblm-filter-tags" id="nblm-filter-tags"></div>
   `;
-  tools.querySelector('input').oninput = (e) => { searchQuery = e.target.value.toLowerCase(); applyFilters(); };
+  // Al volver de un cuaderno se crea una barra nueva: mantenemos la búsqueda que había
+  tools.querySelector('input').value = searchQuery;
+  let searchTimeout = null;
+  tools.querySelector('input').oninput = (e) => {
+      searchQuery = e.target.value.toLowerCase();
+      // Agrupamos las pulsaciones: filtramos cuando el usuario hace una pausa al escribir
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => applyFilters(), 150);
+  };
   tools.querySelector('.nblm-manage-btn').onclick = showManagementModal;
-  if (featured) featured.insertAdjacentElement('afterend', tools);
+  const anchor = findToolsAnchor();
+  if (anchor) anchor.before(tools);
+  else if (featured) featured.insertAdjacentElement('afterend', tools);
   else if (listHeader) listHeader.insertAdjacentElement('afterend', tools);
   else if (mainContent) mainContent.prepend(tools);
   if (document.querySelector('.nblm-tools-container')) {
@@ -370,7 +523,7 @@ function showConfirmDialog(title, message, onConfirm, confirmBtnClass = 'nblm-bt
     overlay.className = 'nblm-modal-overlay';
     overlay.style.zIndex = '30000';
     overlay.innerHTML = `
-        <div class="nblm-confirm-modal">
+        <div class="nblm-confirm-modal" role="alertdialog" aria-modal="true">
             <div class="nblm-confirm-title">${title}</div>
             <div class="nblm-confirm-message">${message}</div>
             <div class="nblm-confirm-actions">
@@ -380,113 +533,187 @@ function showConfirmDialog(title, message, onConfirm, confirmBtnClass = 'nblm-bt
         </div>
     `;
     overlay.querySelector('.nblm-btn-cancel').onclick = () => overlay.remove();
+    closeOnEscape(overlay, () => overlay.remove());
     overlay.querySelector(`.${confirmBtnClass}`).onclick = () => { onConfirm(); overlay.remove(); };
     document.body.appendChild(overlay);
+    overlay.querySelector('.nblm-btn-cancel').focus(); // Opción segura por defecto
+}
+
+// Paleta accesible: botones (alcanzables con Tab) con nombre de color y estado pulsado
+function colorPaletteHTML(current, dataAttr) {
+    const isCustom = !PRESET_COLORS.includes(current);
+    return PRESET_COLORS.map(c => {
+        const name = t(COLOR_NAME_KEYS[c]);
+        return `<button type="button" class="nblm-color-swatch ${c === current ? 'active' : ''}" style="background:${c}; --nblm-on:${getContrastText(c)}" data-${dataAttr}="${c}" aria-label="${name}" aria-pressed="${c === current}" title="${name}"></button>`;
+    }).join('') + `
+        <label class="nblm-custom-color-btn ${isCustom ? 'active' : ''}" style="${isCustom ? `background:${current}; color:${getContrastText(current)}` : ''}" title="${t('color_custom')}">
+            <span aria-hidden="true">+</span>
+            <input type="color" class="nblm-custom-color-input" value="${current}" data-${dataAttr}-custom aria-label="${t('color_custom')}">
+        </label>`;
 }
 
 function showManagementModal() {
     const overlay = document.createElement('div');
     overlay.className = 'nblm-modal-overlay';
     let selectedNewColor = '#1a73e8';
-    let tempNewTagName = '';
-    const render = (tagToHighlight = null) => {
-        const body = overlay.querySelector('.nblm-modal-body');
-        body.innerHTML = `
-            <div class="nblm-manage-create-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-                <div style="display:flex; width:100%; gap:12px;">
-                    <input type="text" class="nblm-manage-create-input" placeholder="${t('modal_create_placeholder')}" value="${tempNewTagName}">
-                    <button class="nblm-btn-primary">${t('modal_btn_create')}</button>
-                </div>
-                <div class="nblm-color-picker-container" style="margin-top:0;">
-                    <span style="font-size:11px; color:#5f6368; margin-right:4px;">${t('modal_color_label')}</span>
-                    ${PRESET_COLORS.map(c => `<div class="nblm-color-swatch ${c === selectedNewColor ? 'active' : ''}" style="background:${c}" data-new-color="${c}"></div>`).join('')}
-                    <div class="nblm-custom-color-btn" style="background:${PRESET_COLORS.includes(selectedNewColor) ? 'transparent' : selectedNewColor}">
-                        <span>+</span>
-                        <input type="color" class="nblm-custom-color-input" id="new-tag-custom-color" value="${selectedNewColor}">
-                    </div>
-                </div>
-            </div>
-            <div class="nblm-manage-list"></div>
-        `;
-        const createInput = body.querySelector('.nblm-manage-create-input');
-        createInput.oninput = (e) => { tempNewTagName = e.target.value; };
-        body.querySelectorAll('[data-new-color]').forEach(sw => { sw.onclick = () => { selectedNewColor = sw.dataset.newColor; render(); createInput.focus(); }; });
-        body.querySelector('#new-tag-custom-color').onchange = (e) => { selectedNewColor = e.target.value; render(); createInput.focus(); };
-        const handleCreate = () => {
-            const val = tempNewTagName.trim();
-            if (val && !globalTags.includes(val)) { addGlobalTag(val); setTagColor(val, selectedNewColor); tempNewTagName = ''; render(val); }
-        };
-        body.querySelector('.nblm-btn-primary').onclick = handleCreate;
-        createInput.onkeydown = (e) => { if (e.key === 'Enter') handleCreate(); };
-        const list = body.querySelector('.nblm-manage-list');
-        globalTags.forEach(tag => {
+    let expandedTag = null; // Etiqueta con la paleta desplegada
+    let filterText = '';
+    const FILTER_THRESHOLD = 6; // A partir de cuántas etiquetas se muestra el filtro
+
+    const closeModal = () => overlay.remove();
+
+    const showFieldError = (el, message) => {
+        el.textContent = message;
+        el.hidden = !message;
+        clearTimeout(el._timer);
+        if (message) el._timer = setTimeout(() => { el.textContent = ''; el.hidden = true; }, 4000);
+    };
+
+    const renderCreatePalette = () => {
+        const palette = overlay.querySelector('.nblm-create-palette');
+        palette.innerHTML = colorPaletteHTML(selectedNewColor, 'new-color');
+        palette.querySelectorAll('[data-new-color]').forEach(sw => {
+            sw.onclick = () => { selectedNewColor = sw.dataset.newColor; renderCreatePalette(); palette.querySelector(`[data-new-color="${selectedNewColor}"]`)?.focus(); };
+        });
+        palette.querySelector('[data-new-color-custom]').onchange = (e) => { selectedNewColor = e.target.value; renderCreatePalette(); };
+    };
+
+    const renderList = (tagToHighlight = null) => {
+        const filterRow = overlay.querySelector('.nblm-manage-filter-row');
+        filterRow.hidden = globalTags.length <= FILTER_THRESHOLD;
+        if (filterRow.hidden) filterText = '';
+        const query = normalizeString(filterText);
+        const visibleTags = globalTags.filter(tag => !query || normalizeString(tag).includes(query));
+
+        const list = overlay.querySelector('.nblm-manage-list');
+        list.innerHTML = '';
+        if (globalTags.length > 0 && visibleTags.length === 0) {
+            list.innerHTML = `<div class="nblm-manage-empty">${t('modal_no_matches')}</div>`;
+            return;
+        }
+        visibleTags.forEach(tag => {
             const item = document.createElement('div');
             item.className = 'nblm-manage-item' + (tag === tagToHighlight ? ' newly-created' : '');
             const color = getTagColor(tag);
+            const count = countNotebooksWithTag(tag);
+            const isExpanded = expandedTag === tag;
             item.innerHTML = `
                 <div class="nblm-manage-row">
-                    <input type="text" class="nblm-tag-edit-input" value="${tag}" title="${t('modal_rename_hint')}">
-                    <button class="nblm-btn-icon danger" title="${t('modal_btn_delete_hint')}"><span>&times;</span></button>
-                </div>
-                <div class="nblm-color-picker-container">
-                    ${PRESET_COLORS.map(c => `<div class="nblm-color-swatch ${c === color ? 'active' : ''}" style="background:${c}" data-color="${c}" data-tag="${tag}"></div>`).join('')}
-                    <div class="nblm-custom-color-btn" style="background:${PRESET_COLORS.includes(color) ? 'transparent' : color}">
-                        <span>+</span><input type="color" class="nblm-custom-color-input" value="${color}" data-tag-custom="${tag}">
+                    <button type="button" class="nblm-color-dot" style="background:${color}" aria-label="${t('modal_edit_color')}: ${escapeHTML(tag)}" aria-expanded="${isExpanded}" title="${t('modal_edit_color')}"></button>
+                    <div class="nblm-tag-name-wrap">
+                        <input type="text" class="nblm-tag-edit-input" value="${escapeHTML(tag)}" title="${t('modal_rename_hint')}" aria-label="${t('modal_rename_hint')}: ${escapeHTML(tag)}">
+                        <span class="nblm-edit-icon">${icon('edit', 14)}</span>
                     </div>
+                    <span class="nblm-tag-count">${formatNotebookCount(count)}</span>
+                    <button type="button" class="nblm-btn-icon danger" title="${t('modal_btn_delete_hint')}" aria-label="${t('modal_btn_delete_hint')}: ${escapeHTML(tag)}">${icon('delete', 18)}</button>
                 </div>
+                <div class="nblm-field-error" role="alert" hidden></div>
+                ${isExpanded ? `<div class="nblm-color-picker-container">${colorPaletteHTML(color, 'color')}</div>` : ''}
             `;
             if (tag === tagToHighlight) setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+
+            const errorEl = item.querySelector('.nblm-field-error');
             const input = item.querySelector('.nblm-tag-edit-input');
-            input.onblur = () => renameTag(tag, input.value.trim());
-            input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
-            item.querySelectorAll('[data-color]').forEach(sw => { sw.onclick = () => { setTagColor(sw.dataset.tag, sw.dataset.color); render(); }; });
-            const customInput = item.querySelector('[data-tag-custom]');
-            customInput.onchange = () => { setTagColor(customInput.dataset.tagCustom, customInput.value); render(); };
+            item.querySelector('.nblm-edit-icon').onclick = () => input.focus();
+            input.onblur = () => {
+                const result = renameTag(tag, input.value.trim());
+                if (result === 'renamed') { if (expandedTag === tag) expandedTag = input.value.trim(); renderList(); }
+                else if (result !== 'unchanged') {
+                    input.value = tag;
+                    showFieldError(errorEl, t(result === 'empty' ? 'error_tag_empty' : 'error_tag_exists'));
+                }
+            };
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') input.blur();
+                else if (e.key === 'Escape') { input.value = tag; input.blur(); }
+            };
+
+            const dot = item.querySelector('.nblm-color-dot');
+            dot.onclick = () => {
+                expandedTag = isExpanded ? null : tag;
+                renderList();
+                // Al abrir, el foco salta al color actual de la paleta; al cerrar, vuelve al punto
+                const row = [...overlay.querySelectorAll('.nblm-manage-item')].find(i => i.querySelector('.nblm-tag-edit-input').defaultValue === tag);
+                (isExpanded ? row?.querySelector('.nblm-color-dot') : row?.querySelector('.nblm-color-swatch.active, .nblm-custom-color-input'))?.focus();
+            };
+            if (isExpanded) {
+                const refocus = (selector) => overlay.querySelector(selector)?.focus();
+                item.querySelectorAll('[data-color]').forEach(sw => {
+                    sw.onclick = () => { setTagColor(tag, sw.dataset.color); renderList(); refocus(`.nblm-manage-item [data-color="${sw.dataset.color}"]`); };
+                });
+                item.querySelector('[data-color-custom]').onchange = (e) => { setTagColor(tag, e.target.value); renderList(); };
+            }
+
             item.querySelector('.danger').onclick = () => {
-                showConfirmDialog(t('modal_delete_confirm_title'), t('modal_delete_confirm_msg', tag), () => {
+                const affects = count === 0 ? '' : `<br><strong>${count === 1 ? t('modal_delete_affects_one') : t('modal_delete_affects_other', count)}</strong>`;
+                showConfirmDialog(t('modal_delete_confirm_title'), t('modal_delete_confirm_msg', escapeHTML(tag)) + affects, () => {
+                    hasInteracted = true;
                     globalTags = globalTags.filter(t => t !== tag);
                     delete tagConfig[tag];
                     Object.keys(notebookTags).forEach(id => { notebookTags[id] = notebookTags[id].filter(t => t !== tag); });
-                    saveAllData(); updateUI(); render();
+                    if (expandedTag === tag) expandedTag = null;
+                    saveAllData(); updateUI(); renderList();
                 }, 'nblm-btn-danger');
             };
             list.appendChild(item);
         });
     };
+
+    const modeLabel = { off: t('sync_mode_off'), heuristic: t('sync_mode_heuristic'), always: t('sync_mode_always') }[syncMode];
+    const langOpt = (lang, label, title) =>
+        `<button type="button" class="nblm-lang-opt ${uiLang === lang ? 'active' : ''}" data-lang="${lang}" aria-pressed="${uiLang === lang}" title="${title}">${label}</button>`;
+
     overlay.innerHTML = `
-        <div class="nblm-modal">
+        <div class="nblm-modal" role="dialog" aria-modal="true" aria-labelledby="nblm-modal-title">
             <div class="nblm-modal-header">
-                <h2>${t('modal_manage_title')}</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <div class="nblm-lang-selector" style="margin-right:12px; display:flex; gap:4px;">
-                        <span class="nblm-lang-opt ${uiLang === 'auto' ? 'active' : ''}" data-lang="auto" style="cursor:pointer; font-size:14px; opacity:${uiLang === 'auto' ? '1' : '0.4'}" title="${t('lang_auto')}">🌐</span>
-                        <span class="nblm-lang-opt ${uiLang === 'es' ? 'active' : ''}" data-lang="es" style="cursor:pointer; font-size:14px; opacity:${uiLang === 'es' ? '1' : '0.4'}" title="${t('lang_es')}">ES</span>
-                        <span class="nblm-lang-opt ${uiLang === 'en' ? 'active' : ''}" data-lang="en" style="cursor:pointer; font-size:14px; opacity:${uiLang === 'en' ? '1' : '0.4'}" title="${t('lang_en')}">EN</span>
-                        <span class="nblm-lang-opt ${uiLang === 'ca' ? 'active' : ''}" data-lang="ca" style="cursor:pointer; font-size:14px; opacity:${uiLang === 'ca' ? '1' : '0.4'}" title="${t('lang_ca')}">CA</span>
+                <h2 id="nblm-modal-title">${t('modal_manage_title')}</h2>
+                <div class="nblm-modal-header-actions">
+                    <div class="nblm-lang-selector" role="group" aria-label="${t('lang_auto')}">
+                        ${langOpt('auto', '🌐', t('lang_auto'))}
+                        ${langOpt('es', 'ES', t('lang_es'))}
+                        ${langOpt('en', 'EN', t('lang_en'))}
+                        ${langOpt('ca', 'CA', t('lang_ca'))}
                     </div>
-                    <button class="nblm-btn-icon" id="nblm-export" title="${t('modal_export_help')}">💾</button>
-                    <button class="nblm-btn-icon" id="nblm-import" title="${t('modal_import_help')}">📂</button>
-                    <span class="nblm-modal-close" style="margin-left:8px;">&times;</span>
+                    <button type="button" class="nblm-btn-icon" id="nblm-export" title="${t('modal_export_help')}" aria-label="${t('modal_export_help')}">${icon('download', 20)}</button>
+                    <button type="button" class="nblm-btn-icon" id="nblm-import" title="${t('modal_import_help')}" aria-label="${t('modal_import_help')}">${icon('upload', 20)}</button>
+                    <button type="button" class="nblm-btn-icon nblm-modal-close" title="${t('modal_close')}" aria-label="${t('modal_close')}">${icon('close', 22)}</button>
                 </div>
             </div>
-            <div class="nblm-modal-body"></div>
-            
+            <div class="nblm-modal-body">
+                <div class="nblm-manage-create-row">
+                    <div class="nblm-manage-create-fields">
+                        <input type="text" class="nblm-manage-create-input" placeholder="${t('modal_create_placeholder')}" aria-label="${t('modal_create_placeholder')}">
+                        <button type="button" class="nblm-btn-primary">${t('modal_btn_create')}</button>
+                    </div>
+                    <div class="nblm-field-error" role="alert" hidden></div>
+                    <div class="nblm-color-picker-container nblm-create-palette" role="group" aria-label="${t('color_custom')}"></div>
+                </div>
+                <div class="nblm-manage-filter-row" hidden>
+                    <span class="nblm-filter-icon">${icon('search', 18)}</span>
+                    <input type="text" class="nblm-manage-filter-input" placeholder="${t('modal_filter_placeholder')}" aria-label="${t('modal_filter_placeholder')}">
+                </div>
+                <div class="nblm-manage-list"></div>
+            </div>
+
             ${IS_DEV_MODE ? `
-                <div class="nblm-sync-settings" style="margin: 0 24px 16px 24px; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dadce0;">
-                    <div style="font-size: 11px; font-weight: 500; color: #5f6368; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">${t('settings_sync_mode_label')}</div>
-                    <div style="display: flex; gap: 8px;">
-                        <select id="nblm-sync-mode-select" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #dadce0; font-size: 13px; outline: none; cursor: pointer;">
+                <details class="nblm-advanced ${syncMode === 'off' ? 'danger' : ''}" ${syncMode === 'off' ? 'open' : ''}>
+                    <summary title="${t('modal_advanced')}">
+                        <span class="nblm-advanced-icon">${icon('warning', 16)}</span>
+                        <span class="nblm-advanced-text"><strong>${t('dev_mode_warning_title')}</strong> <span class="nblm-advanced-mode">· ${modeLabel}</span></span>
+                        <span class="nblm-advanced-chevron">${icon('expand', 20)}</span>
+                    </summary>
+                    <div class="nblm-sync-settings">
+                        <label class="nblm-sync-label" for="nblm-sync-mode-select">${t('settings_sync_mode_label')}</label>
+                        <select id="nblm-sync-mode-select">
                             <option value="off" ${syncMode === 'off' ? 'selected' : ''}>${t('sync_mode_off')}</option>
                             <option value="heuristic" ${syncMode === 'heuristic' ? 'selected' : ''}>${t('sync_mode_heuristic')}</option>
                             <option value="always" ${syncMode === 'always' ? 'selected' : ''}>${t('sync_mode_always')}</option>
                         </select>
                     </div>
-                </div>
-
-                <div id="nblm-dev-banner" style="background: ${syncMode === 'off' ? '#feeef3' : '#fff8e1'}; border-left: 4px solid ${syncMode === 'off' ? '#d93025' : '#ffb300'}; padding: 10px 16px; margin: 0 24px 16px 24px; border-radius: 4px; font-size: 12px; color: #5f6368; line-height: 1.4;">
-                    <strong>${syncMode === 'off' ? t('dev_mode_warning_title') : t('dev_mode_warning_title')}</strong>: 
-                    ${syncMode === 'off' ? t('dev_mode_warning_main_msg') : t('dev_mode_warning_msg')}
-                </div>
+                    <div class="nblm-dev-banner ${syncMode === 'off' ? 'danger' : ''}">
+                        ${syncMode === 'off' ? t('dev_mode_warning_main_msg') : t('dev_mode_warning_msg')}
+                    </div>
+                </details>
             ` : ''}
 
             <div class="nblm-modal-footer">
@@ -495,6 +722,31 @@ function showManagementModal() {
         </div>
     `;
 
+    // Crear etiquetas: errores visibles y el foco se queda en el campo para crear varias seguidas
+    const createInput = overlay.querySelector('.nblm-manage-create-input');
+    const createError = overlay.querySelector('.nblm-manage-create-row .nblm-field-error');
+    const handleCreate = () => {
+        const val = createInput.value.trim();
+        if (!val) { showFieldError(createError, t('error_tag_empty')); createInput.focus(); return; }
+        if (globalTags.some(g => g.toLowerCase() === val.toLowerCase())) {
+            showFieldError(createError, t('error_tag_exists'));
+            createInput.select();
+            return;
+        }
+        addGlobalTag(val); setTagColor(val, selectedNewColor);
+        createInput.value = '';
+        showFieldError(createError, '');
+        const filterInput = overlay.querySelector('.nblm-manage-filter-input');
+        filterText = ''; filterInput.value = '';
+        renderList(val);
+        createInput.focus();
+    };
+    overlay.querySelector('.nblm-manage-create-fields .nblm-btn-primary').onclick = handleCreate;
+    createInput.onkeydown = (e) => { if (e.key === 'Enter') handleCreate(); };
+    createInput.oninput = () => showFieldError(createError, '');
+
+    overlay.querySelector('.nblm-manage-filter-input').oninput = (e) => { filterText = e.target.value; renderList(); };
+
     if (IS_DEV_MODE) {
         const select = overlay.querySelector('#nblm-sync-mode-select');
         const updateTooltip = (val) => {
@@ -502,22 +754,21 @@ function showManagementModal() {
             else if (val === 'heuristic') select.title = t('sync_mode_heuristic_tooltip');
             else if (val === 'always') select.title = t('sync_mode_always_tooltip');
         };
-        
         updateTooltip(syncMode);
-        
         select.onchange = (e) => {
             syncMode = e.target.value;
             chrome.storage.local.set({ syncMode });
-            updateTooltip(syncMode);
-            // Refrescamos el modal para actualizar el banner inferior
-            overlay.remove();
+            // Refrescamos el modal para actualizar el aviso y el resumen de la sección avanzada
+            closeModal();
             showManagementModal();
+            document.querySelector('.nblm-advanced')?.setAttribute('open', '');
+            document.querySelector('#nblm-sync-mode-select')?.focus();
         };
     }
     overlay.querySelectorAll('.nblm-lang-opt').forEach(opt => {
         opt.onclick = async () => {
             uiLang = opt.dataset.lang; await loadLanguage(uiLang); saveAllData();
-            overlay.remove(); showManagementModal(); refreshInjectedTexts(); updateUI();
+            closeModal(); showManagementModal(); refreshInjectedTexts(); updateUI();
         };
     });
     overlay.querySelector('#nblm-export').onclick = () => {
@@ -535,16 +786,20 @@ function showManagementModal() {
                 try {
                     const imported = JSON.parse(re.target.result);
                     if (!imported.globalTags || !Array.isArray(imported.globalTags)) { showAlertDialog('❌', t('import_error_format_title'), t('import_error_format_msg')); return; }
-                    showImportGranularModal(imported, () => { saveAllData(); updateUI(); render(); });
+                    showImportGranularModal(imported, () => { saveAllData(); updateUI(); renderList(); });
                 } catch (err) { showAlertDialog('❌', t('import_error_read_title'), t('import_error_read_msg')); }
             };
             reader.readAsText(file);
         };
         fileInput.click();
     };
-    overlay.querySelector('.nblm-modal-close').onclick = () => overlay.remove();
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-    document.body.appendChild(overlay); render();
+    overlay.querySelector('.nblm-modal-close').onclick = closeModal;
+    overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+    closeOnEscape(overlay, closeModal);
+    document.body.appendChild(overlay);
+    renderCreatePalette();
+    renderList();
+    createInput.focus();
 }
 
 function showImportGranularModal(data, onComplete) {
@@ -578,6 +833,7 @@ function showImportGranularModal(data, onComplete) {
         </div>
     `;
     overlay.querySelector('.nblm-btn-cancel').onclick = () => overlay.remove();
+    closeOnEscape(overlay, () => overlay.remove());
     overlay.querySelector('#nblm-confirm-import').onclick = () => {
         hasInteracted = true;
         const importTags = overlay.querySelector('#import-opt-tags').checked;
@@ -589,8 +845,12 @@ function showImportGranularModal(data, onComplete) {
     document.body.appendChild(overlay);
 }
 
+// Devuelve 'renamed', 'unchanged', 'empty' o 'duplicate' para que la interfaz pueda informar
 function renameTag(oldName, newName) {
-    if (!newName || oldName === newName || globalTags.includes(newName)) return;
+    if (oldName === newName) return 'unchanged';
+    if (!newName) return 'empty';
+    // Duplicado sin distinguir mayúsculas, salvo que solo cambie la capitalización de la propia etiqueta
+    if (globalTags.some(g => g !== oldName && g.toLowerCase() === newName.toLowerCase())) return 'duplicate';
     hasInteracted = true;
     globalTags = globalTags.map(t => t === oldName ? newName : t);
     globalTags.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
@@ -598,6 +858,7 @@ function renameTag(oldName, newName) {
     Object.keys(notebookTags).forEach(id => { notebookTags[id] = notebookTags[id].map(t => t === oldName ? newName : t); });
     if (activeFilters.has(oldName)) { activeFilters.delete(oldName); activeFilters.add(newName); }
     saveAllData(); updateUI();
+    return 'renamed';
 }
 
 function setTagColor(tag, color) {
@@ -615,7 +876,7 @@ function renderFilterTags() {
     const tagEl = document.createElement('span');
     const isActive = activeFilters.has(tag);
     tagEl.className = `nblm-filter-tag ${isActive ? 'active' : ''}`;
-    if (isActive) { tagEl.style.backgroundColor = getTagColor(tag); tagEl.style.color = 'white'; tagEl.style.borderColor = 'transparent'; }
+    if (isActive) { tagEl.style.backgroundColor = getTagColor(tag); tagEl.style.color = getContrastText(getTagColor(tag)); tagEl.style.borderColor = 'transparent'; }
     tagEl.innerText = tag;
     tagEl.onclick = () => { if (isActive) activeFilters.delete(tag); else activeFilters.add(tag); updateUI(); };
     container.appendChild(tagEl);
@@ -637,24 +898,23 @@ function renderFilterTags() {
   }
 }
 
-function applyFilters() {
+function applyFilters(scan = scanNotebooks()) {
+  const filterArray = Array.from(activeFilters);
+  // Fase de lectura: decidimos la visibilidad de todos los cuadernos sin modificar el DOM
+  const decisions = [];
   document.querySelectorAll('.nblm-processed').forEach(node => {
-    const fp = getNotebookFingerprint(node);
-    const all = document.querySelectorAll('project-button, tr, [role="row"]');
-    let count = 0;
-    all.forEach(r => { if (getNotebookFingerprint(r) === fp) count++; });
-    const id = getResolvedId(node, count > 1);
-    const titleText = node.innerText.toLowerCase();
+    const id = getResolvedId(node, scan.isCollision(node));
     const tags = notebookTags[id] || [];
-    const matchesSearch = titleText.includes(searchQuery);
+    const matchesSearch = !searchQuery || node.innerText.toLowerCase().includes(searchQuery);
     let matchesTags = true;
-    if (activeFilters.size > 0) {
-        const filterArray = Array.from(activeFilters);
+    if (filterArray.length > 0) {
         if (filterMode === 'AND') matchesTags = filterArray.every(f => tags.includes(f));
         else matchesTags = filterArray.some(f => tags.includes(f));
     }
-    node.style.display = (matchesSearch && matchesTags) ? '' : 'none';
+    decisions.push({ node, display: (matchesSearch && matchesTags) ? '' : 'none' });
   });
+  // Fase de escritura
+  decisions.forEach(({ node, display }) => { if (node.style.display !== display) node.style.display = display; });
 }
 
 function showFullTagsTooltip(anchor, id, sticky) {
@@ -675,6 +935,19 @@ function showFullTagsTooltip(anchor, id, sticky) {
 }
 
 function closeTooltip() { if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; } }
+
+// Sincroniza la vista flotante tras un cambio de etiquetas. Al redibujar la tarjeta, la etiqueta
+// bajo el puntero se sustituye y el navegador no dispara mouseleave sobre un elemento eliminado.
+function refreshTooltip() {
+    if (!activeTooltip) return;
+    const id = activeTooltip.dataset.id;
+    const tags = notebookTags[id] || [];
+    const inUse = activeTooltip.dataset.sticky === 'true' || activeTooltip.dataset.hovered === 'true';
+    // Vista de paso (hover) sobre una tarjeta redibujada: la cerramos; si otra etiqueta queda bajo
+    // el puntero, su mouseenter la volverá a abrir con los datos actualizados
+    if (tags.length === 0 || !inUse) { closeTooltip(); return; }
+    activeTooltip.replaceChildren(...tags.map(tag => createTagElement(tag, id, true)));
+}
 function closePopover() { if (currentPopover) { currentPopover.remove(); currentPopover = null; } }
 function addGlobalTag(tag) { 
     if (!globalTags.includes(tag)) { 
@@ -705,6 +978,7 @@ function showTagPopover(id) {
         <div id="nblm-create"></div>
     `;
     const close = () => { overlay.remove(); currentPopover = null; };
+    closeOnEscape(overlay, close);
     pop.querySelector('#nblm-close').onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
     const input = pop.querySelector('#nblm-in');
@@ -721,7 +995,7 @@ function showTagPopover(id) {
                 const color = getTagColor(t);
                 item.innerHTML = `
                     <div class="nblm-check-icon" style="border-color:${color}; background:${isChecked ? color : 'transparent'}"></div>
-                    <span class="nblm-tag" style="background-color:${color}; cursor:pointer; max-width:160px;">${t}</span>
+                    <span class="nblm-tag" style="background-color:${color}; color:${getContrastText(color)}; cursor:pointer; max-width:160px;">${escapeHTML(t)}</span>
                 `;
                 item.onclick = (e) => { e.stopPropagation(); toggleTag(id, t); render(); input.focus(); };
                 listContainer.appendChild(item);
@@ -730,7 +1004,7 @@ function showTagPopover(id) {
         if (showCreate) {
             const createOpt = document.createElement('div');
             createOpt.className = 'nblm-create-option';
-            createOpt.innerHTML = `<span>${t('popover_create_tag')}</span> <span class="nblm-tag" style="background-color:#1a73e8; margin-left:4px;">${input.value}</span>`;
+            createOpt.innerHTML = `<span>${t('popover_create_tag')}</span> <span class="nblm-tag" style="background-color:#1a73e8; color:${getContrastText('#1a73e8')}; margin-left:4px;">${escapeHTML(input.value)}</span>`;
             createOpt.onclick = () => { const newTag = input.value.trim(); addGlobalTag(newTag); toggleTag(id, newTag); input.value = ''; render(); };
             pop.querySelector('#nblm-create').innerHTML = ''; pop.querySelector('#nblm-create').appendChild(createOpt);
         } else pop.querySelector('#nblm-create').innerHTML = '';
@@ -745,9 +1019,11 @@ function showTagPopover(id) {
         }
     };
     overlay.appendChild(pop);
-    document.body.appendChild(overlay); 
-    currentPopover = overlay; 
+    document.body.appendChild(overlay);
+    currentPopover = overlay;
     render();
+    // `autofocus` no actúa en elementos insertados tras la carga: sin esto, lo tecleado iría a la página
+    input.focus();
 }
 
 // 6. INICIALIZACIÓN
@@ -768,12 +1044,7 @@ function init() {
       const btn = e.target.closest('.project-button-more, button[aria-haspopup="menu"], button[aria-label*="Menú"]');
       if (btn) {
           const row = btn.closest('project-button, tr, [role="row"]');
-          if (row) {
-              const fp = getNotebookFingerprint(row);
-              const allRows = document.querySelectorAll('project-button, tr, [role="row"]');
-              let count = 0; allRows.forEach(r => { if (getNotebookFingerprint(r) === fp) count++; });
-              lastClickedNotebookId = getResolvedId(row, count > 1);
-          }
+          if (row) lastClickedNotebookId = getResolvedId(row, scanNotebooks().isCollision(row));
       }
   });
   document.addEventListener('click', (e) => {
@@ -857,7 +1128,7 @@ function showConflictDialog(localRes, syncRes, onDecision) {
 async function start() {
     // 1. Lectura simultánea de ambos almacenamientos
     const syncDataRaw = await new Promise(r => chrome.storage.sync.get(null, r));
-    const localRes = await new Promise(r => chrome.storage.local.get(['notebookTags', 'globalTags', 'titleToIdMap', 'tagConfig', 'filterMode', 'uiLang', 'lastUpdated'], r));
+    const localRes = await new Promise(r => chrome.storage.local.get(['notebookTags', 'globalTags', 'titleToIdMap', 'tagConfig', 'filterMode', 'uiLang', 'lastUpdated', 'syncMode'], r));
 
     // 2. Reconstrucción de datos de la nube
     let syncRes = {};

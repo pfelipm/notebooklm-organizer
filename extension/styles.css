@@ -90,6 +90,13 @@ body.dark-theme {
     margin-left: 12px;
 }
 
+/* La celda de título de la vista de lista no tiene relleno vertical: con títulos de 2 líneas
+   el contenido llena la fila y las etiquetas quedan pegadas al borde. Solo si hay etiquetas. */
+.mat-mdc-cell:has(> .nblm-tag-container:not(:empty)), td:has(> .nblm-tag-container:not(:empty)) {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
 /* Etiquetas de filtrado en la barra superior */
 .nblm-filter-tags {
     display: flex;
@@ -256,7 +263,7 @@ body.dark-theme {
 
 .nblm-tag .remove-tag:hover {
   opacity: 1;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: color-mix(in srgb, currentColor 20%, transparent);
 }
 
 /* Chip para mostrar "+X" etiquetas más */
@@ -460,8 +467,6 @@ body.dark-theme {
   grid-column: 1 / -1;
   max-width: 100%;
 }
-  min-height: auto; /* FIX: Evitar mínimos heredados */
-}
 
 /* Ocultado visual de destacados en la vista principal (Sin afectar al flujo de Angular) */
 /* Solo se oculta si NO estamos en la pestaña de destacados */
@@ -544,11 +549,27 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   color: var(--nblm-text);
 }
 
+.nblm-modal-header-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.nblm-modal-header-actions .nblm-lang-selector {
+  margin-right: 8px;
+}
+
 .nblm-modal-close {
-  cursor: pointer;
-  font-size: 24px;
-  color: var(--nblm-secondary-text);
-  line-height: 1;
+  margin-left: 4px;
+}
+
+/* Foco visible para quien navega con teclado */
+.nblm-modal :focus-visible,
+.nblm-popover :focus-visible,
+.nblm-confirm-modal :focus-visible,
+.nblm-alert-modal :focus-visible {
+  outline: 2px solid var(--nblm-primary);
+  outline-offset: 2px;
 }
 
 .nblm-modal-body {
@@ -582,7 +603,7 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
 .nblm-manage-item {
   display: flex;
   flex-direction: column;
-  padding: 16px 24px;
+  padding: 6px 16px 6px 24px;
   border-bottom: 1px solid var(--nblm-bg-tertiary);
   transition: background 0.2s;
 }
@@ -593,14 +614,121 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
 
 .nblm-manage-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.nblm-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--nblm-bg-main);
+  box-shadow: 0 0 0 1px var(--nblm-border);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s;
+}
+
+.nblm-color-dot:hover,
+.nblm-color-dot[aria-expanded="true"] {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px var(--nblm-primary);
+}
+
+.nblm-tag-name-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* Lápiz: indica que el nombre se puede editar; más visible al pasar por la fila */
+.nblm-edit-icon {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  color: var(--nblm-secondary-text);
+  opacity: 0.35;
+  cursor: text;
+  transition: opacity 0.2s;
+}
+
+.nblm-manage-item:hover .nblm-edit-icon {
+  opacity: 0.8;
+}
+
+.nblm-tag-edit-input:focus + .nblm-edit-icon {
+  opacity: 0;
+}
+
+.nblm-tag-count {
+  font-size: 12px;
+  color: var(--nblm-secondary-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 84px; /* Ancho fijo: lápices y botones alineados en todas las filas */
+  text-align: right;
+}
+
+.nblm-manage-item .nblm-color-picker-container {
+  margin: 4px 0 6px 28px;
+  flex-wrap: wrap;
+}
+
+.nblm-manage-empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--nblm-secondary-text);
+}
+
+/* Mensajes de error junto a los campos */
+.nblm-field-error {
+  font-size: 12px;
+  color: var(--nblm-danger);
+  margin: 2px 0 0 28px;
+}
+
+.nblm-manage-create-row .nblm-field-error {
+  margin: 0;
+}
+
+/* Filtro de etiquetas (con muchas etiquetas) */
+.nblm-manage-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--nblm-bg-tertiary);
+  color: var(--nblm-secondary-text);
+}
+
+.nblm-manage-filter-row[hidden] {
+  display: none;
+}
+
+.nblm-filter-icon {
+  display: flex;
+}
+
+.nblm-manage-filter-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--nblm-text);
 }
 
 .nblm-tag-edit-input {
   border: 1px solid transparent;
-  padding: 4px 8px;
+  padding: 4px 28px 4px 8px; /* Hueco para el lápiz */
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   font-size: 14px;
   font-weight: 500;
   border-radius: 4px;
@@ -629,8 +757,17 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
     background: var(--nblm-bg-secondary);
     border-bottom: 2px solid var(--nblm-bg-tertiary);
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nblm-manage-create-fields {
+    display: flex;
     gap: 12px;
-    align-items: center;
+}
+
+.nblm-create-palette {
+    margin-top: 0;
 }
 
 .nblm-manage-create-input {
@@ -682,13 +819,6 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   margin-top: 10px;
 }
 
-/* TEXTO "Selecciona un color" -> Aplicamos variable secundaria */
-.nblm-color-picker-container span {
-    font-size: 11px;
-    color: var(--nblm-secondary-text) !important; /* Importante para sobreescribir estilos en línea si los hubiera */
-    margin-right: 4px;
-}
-
 .nblm-color-swatch {
   width: 20px;
   height: 20px;
@@ -696,6 +826,10 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   cursor: pointer;
   border: 2px solid transparent;
   transition: transform 0.1s;
+  padding: 0;
+  margin: 0;
+  box-sizing: content-box;
+  appearance: none;
 }
 
 .nblm-color-swatch:hover {
@@ -710,7 +844,7 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
 
 .nblm-color-swatch.active::after {
     content: '✓';
-    color: white; /* Siempre blanco dentro del color */
+    color: var(--nblm-on, white); /* Blanco u oscuro según el color de fondo */
     font-size: 12px;
     display: flex;
     align-items: center;
@@ -720,8 +854,10 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
 }
 
 .nblm-custom-color-btn {
-  width: 20px;
-  height: 20px;
+  /* Mismo tamaño exterior que .nblm-color-swatch (20px + 2px de borde por lado) */
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 1px dashed var(--nblm-border);
   cursor: pointer;
@@ -732,12 +868,21 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   color: var(--nblm-secondary-text);
   overflow: hidden;
   position: relative;
-  text-shadow: 0 0 2px rgba(0,0,0,0.5); /* Sombra para visibilidad */
+}
+
+.nblm-custom-color-btn.active {
+  border: 2px solid var(--nblm-text);
+}
+
+.nblm-custom-color-btn:focus-within {
+  outline: 2px solid var(--nblm-primary);
+  outline-offset: 2px;
 }
 
 /* Ajuste para el símbolo + en el botón custom */
 .nblm-custom-color-btn span {
     color: inherit;
+    line-height: 1;
 }
 
 .nblm-custom-color-input {
@@ -950,7 +1095,7 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   border-radius: 12px;
   border: 1px solid var(--nblm-border);
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -959,6 +1104,12 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   padding: 0 2px;
   font-weight: 500;
   color: var(--nblm-secondary-text);
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.4;
 }
 
 .nblm-lang-opt:hover {
@@ -973,17 +1124,144 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   font-weight: bold;
 }
 
-/* Ocultado visual de destacados en la vista principal (Sin afectar al flujo de Angular) */
-/* Solo se oculta si NO estamos en la pestaña de destacados */
-body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-container {
-    position: absolute !important;
-    height: 0 !important;
-    width: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: -1 !important;
+/* Sección "Avanzado" plegable del modal (solo modo dev) */
+.nblm-advanced {
+  margin: 0;
+  border-top: 1px solid var(--nblm-border);
+  background: var(--nblm-bg-main);
+}
+
+/* Cabecera plegada con aspecto de aviso: invita a desplegar y leer la advertencia del modo dev */
+.nblm-advanced > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 24px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 4px solid #ffb300;
+  background: #fff8e1;
+  font-size: 12px;
+  color: #5f6368;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.nblm-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nblm-advanced > summary:hover {
+  filter: brightness(0.97);
+}
+
+.nblm-advanced-icon {
+  display: flex;
+  color: #e37400;
+}
+
+.nblm-advanced-text {
+  flex: 1;
+}
+
+.nblm-advanced-text strong {
+  color: #3c4043;
+}
+
+.nblm-advanced-mode {
+  font-weight: 400;
+}
+
+.nblm-advanced-chevron {
+  display: flex;
+  transition: transform 0.2s;
+}
+
+.nblm-advanced[open] .nblm-advanced-chevron {
+  transform: rotate(180deg);
+}
+
+.nblm-advanced.danger > summary {
+  border-left-color: #d93025;
+  background: #feeef3;
+}
+
+.nblm-advanced.danger .nblm-advanced-icon {
+  color: #d93025;
+}
+
+body.dark-theme .nblm-advanced > summary {
+  background: rgba(255, 179, 0, 0.12);
+  color: var(--nblm-secondary-text);
+}
+
+body.dark-theme .nblm-advanced-text strong {
+  color: var(--nblm-text);
+}
+
+body.dark-theme .nblm-advanced-icon {
+  color: #fdd663;
+}
+
+body.dark-theme .nblm-advanced.danger > summary {
+  background: rgba(242, 139, 130, 0.12);
+}
+
+body.dark-theme .nblm-advanced.danger .nblm-advanced-icon {
+  color: #f28b82;
+}
+
+.nblm-sync-settings {
+  margin: 0 24px 12px;
+  padding: 12px;
+  background: var(--nblm-bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--nblm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nblm-sync-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--nblm-secondary-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#nblm-sync-mode-select {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--nblm-border);
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--nblm-bg-input);
+  color: var(--nblm-text);
+}
+
+.nblm-dev-banner {
+  margin: 0 24px 16px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  border-left: 4px solid #ffb300;
+  background: #fff8e1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #5f6368;
+}
+
+.nblm-dev-banner.danger {
+  border-left-color: #d93025;
+  background: #feeef3;
+}
+
+body.dark-theme .nblm-dev-banner {
+  background: rgba(255, 179, 0, 0.12);
+  color: var(--nblm-text);
+}
+
+body.dark-theme .nblm-dev-banner.danger {
+  background: rgba(242, 139, 130, 0.12);
 }
