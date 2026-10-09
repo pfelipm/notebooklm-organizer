@@ -13,7 +13,7 @@
 Privacy is at the core of this extension. NotebookLM Organizer is built following the **principle of least privilege**:
 
 - **No Content Access:** The extension **never** reads, accesses, or processes the content of your notes, documents, or sources within your notebooks.
-- **Organizational Metadata Only:** It only detects the **notebook name, source count, and creation date**. This data is used strictly to identify the notebook and link it to your tags.
+- **Organizational Metadata Only:** It only reads the visible text of each notebook's card in the list, such as the **notebook name, source count, and date**. This data is used strictly to identify the notebook, link it to your tags, and enable search.
 - **No Data Manipulation:** The extension does not modify or manipulate your notebooks in any way. It only adds a visual organization layer on top of the existing Google UI.
 - **Your Data is Yours:** All configurations are stored in your Google account (via Chrome Sync), and only you have access to them.
 
@@ -37,7 +37,9 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 
 Since Gemini Notebook does not expose internal unique identifiers in all its views, the extension uses a metadata-based "fingerprint" to identify each notebook.
 
-If you have multiple notebooks with the **same name, same number of sources, and same date**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier.
+This fingerprint is built from the **notebook name and its number of sources**. Case, accents, spaces, and punctuation in the name are ignored, and only the **first 30 resulting characters** are taken into account. As a result, two notebooks can share a fingerprint even if their names are not identical, for example "Unit Plan: Introduction to Algebra – Part 1" and "Unit Plan: Introduction to Algebra – Part 2" if both have the same number of sources.
+
+If you have multiple notebooks with the **same fingerprint**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier.
 
 ---
 
@@ -52,6 +54,7 @@ If you have multiple notebooks with the **same name, same number of sources, and
 *   **Predefined extension ID:** The `manifest.json` file includes a public key (`key`) to ensure the extension ID is identical across all manual installations. This is essential for Chrome Sync to recognize them as the same extension and allow synchronization. **Important:** Although the ID is the same for all users of this repository, your data is linked exclusively to your Google account, and no one else can access it.
 *   **Permissions:**
     *   `storage`: To save and sync your tags and preferences.
+    *   `activeTab`: Only when you click the extension icon, to check whether the current tab is already Gemini Notebook and, if not, open it in a new tab.
 
 ---
 
@@ -62,7 +65,7 @@ NotebookLM Organizer features an adaptive synchronization engine that automatica
 Because Google Chrome may delete sync data when uninstalling a manually loaded extension (Dev Mode), a **Dual Redundancy** system and a **Conflict Resolution Assistant** have been implemented.
 
 ### 🛠️ Security Modes in Development (Manual Installation)
-While the extension is used in development mode, you will have three levels of protection configurable from the tag management modal:
+While the extension is used in development mode, you will have three levels of protection configurable from the collapsible **Advanced** section of the tag management modal:
 
 <p align="center">
   <img src="assets/modos-sync-dev-en.png" alt="Sync modes">
@@ -105,7 +108,7 @@ If the extension is installed from the official store, it detects the environmen
 
 ## ⚠️ Security Recommendations
 
--   **Manual Export (💾):** Regardless of the installation mode, it is recommended to perform periodic backups by downloading the configuration in JSON format. It is your ultimate safety net if everything else fails. *Shit happens* 😅.
+-   **Manual Export (export button in the management modal):** Regardless of the installation mode, it is recommended to perform periodic backups by downloading the configuration in JSON format. It is your ultimate safety net if everything else fails. *Shit happens* 😅.
 -   **Always Keep a "Guardian" (dev mode only):** As long as you keep the extension installed on at least one device, your data can be automatically recovered on others thanks to local redundancy.
 -   **Updates (dev mode only):** To install a new version of the code, it is not necessary to uninstall the extension. Simply overwrite the files in your local folder and click the reload button at `chrome://extensions`.
 

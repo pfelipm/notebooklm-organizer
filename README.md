@@ -13,7 +13,7 @@
 La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer ha sido diseñada bajo el principio de **mínimo acceso necesario**:
 
 - **Sin acceso al contenido:** la extensión **en ningún momento** lee, accede ni procesa el contenido del texto, documentos o fuentes que guardas dentro de tus cuadernos.
-- **Solo metadatos organizativos:** únicamente detecta el **nombre del cuaderno, el número de fuentes y la fecha de creación**. Estos datos se utilizan exclusivamente para identificar el cuaderno y asociarle tus etiquetas.
+- **Solo metadatos organizativos:** únicamente lee el texto visible de la tarjeta de cada cuaderno en la lista, como el **nombre del cuaderno, el número de fuentes y la fecha**. Estos datos se utilizan exclusivamente para identificar el cuaderno, asociarle tus etiquetas y permitir la búsqueda.
 - **Sin manipulación de datos:** la extensión no modifica ni manipula tus cuadernos de ninguna forma. Solo añade una capa visual de organización sobre la interfaz existente de Google.
 - **Tus datos son tuyos:** toda la configuración se almacena en tu cuenta de Google (vía Chrome Sync) y solo tú tienes acceso a ella.
 
@@ -37,7 +37,9 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 
 Debido a que Gemini Notebook no expone identificadores únicos internos en todas sus vistas, la extensión utiliza una "huella digital" basada en metadatos para identificar cada cuaderno. 
 
-Si tienes varios cuadernos con el **mismo nombre, mismo número de fuentes y misma fecha**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real.
+Esta huella se obtiene a partir del **nombre del cuaderno y su número de fuentes**. Del nombre se ignoran mayúsculas, tildes, espacios y signos de puntuación, y solo se tienen en cuenta los **primeros 30 caracteres** resultantes. Por ello, dos cuadernos pueden compartir huella aunque sus nombres no sean idénticos, por ejemplo «Unidad didáctica de Matemáticas – Tema 1» y «Unidad didáctica de Matemáticas – Tema 2» si ambos tienen el mismo número de fuentes.
+
+Si tienes varios cuadernos con la **misma huella**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real.
 
 ---
 
@@ -52,6 +54,7 @@ Si tienes varios cuadernos con el **mismo nombre, mismo número de fuentes y mis
 *   **ID de extensión predefinido:** el `manifest.json` incluye una clave pública (`key`) para asegurar que el ID de la extensión sea idéntico en todas tus instalaciones manuales. Esto es indispensable para que Chrome Sync reconozca que se trata de la misma extensión y permita la sincronización. **Importante:** aunque el ID sea el mismo para todos los usuarios de este repositorio, tus datos están vinculados exclusivamente a tu cuenta de Google y nadie más puede acceder a ellos.
 *   **Permisos:**
     *   `storage`: para guardar y sincronizar tus etiquetas y preferencias.
+    *   `activeTab`: solo al pulsar el icono de la extensión, para comprobar si la pestaña actual ya es Gemini Notebook y, si no lo es, abrirlo en una pestaña nueva.
 
 ---
 
@@ -62,7 +65,7 @@ NotebookLM Organizer integra un motor de sincronización adaptativo que detecta 
 Debido a que Google Chrome puede eliminar los datos de sincronización al desinstalar una extensión cargada manualmente (Modo Dev), se ha implementado un sistema de **redundancia dual** y un **asistente de resolución de conflictos**.
 
 ### 🛠️ Modos de seguridad en desarrollo (instalación manual)
-Mientras la extensión se use en modo de desarrollo, dispondrás de tres niveles de protección configurables desde el modal de gestión de etiquetas:
+Mientras la extensión se use en modo de desarrollo, dispondrás de tres niveles de protección configurables desde la sección **Avanzado** (desplegable) del modal de gestión de etiquetas:
 
 <p align="center">
   <img src="assets/modos-sync-dev-es.png" alt="Modos de sincronización">
@@ -105,7 +108,7 @@ Si la extensión se instala desde la tienda oficial, detecta el entorno y simpli
 
 ## ⚠️ Recomendaciones de seguridad
 
--   **Exportación manual (💾):** independientemente del modo de instalación, se recomienda realizar copias de seguridad periódicas descargando la configuración en formato JSON. Es la red de seguridad definitiva por si todo lo demás falla. *Shit happens* 😅.
+-   **Exportación manual (botón de exportar del modal de gestión):** independientemente del modo de instalación, se recomienda realizar copias de seguridad periódicas descargando la configuración en formato JSON. Es la red de seguridad definitiva por si todo lo demás falla. *Shit happens* 😅.
 -   **Conserva siempre un "guardián" (solo modo dev):** mientras mantengas la extensión instalada en al menos un dispositivo, tus datos podrán recuperarse automáticamente en los demás gracias a la redundancia local.
 -   **Actualizaciones (solo modo dev):** para instalar una nueva versión del código, no es necesario desinstalar la extensión. Simplemente sobreescribe los archivos en tu carpeta local y pulsa el botón de recarga en `chrome://extensions`.
 

@@ -13,7 +13,7 @@
 La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer ha estat dissenyada sota el principi de **mínim accés necessari**:
 
 - **Sense accés al contingut:** l'extensió **en cap moment** llegeix, accedeix ni processa el contingut del text, documents o fonts que guardes dins dels teus quaderns.
-- **Només metadades organitzatives:** únicament detecta el **nom del quadern, el nombre de fonts i la data de creació**. Aquestes dades s'utilitzen exclusivament per identificar el quadern i associar-li les teves etiquetes.
+- **Només metadades organitzatives:** únicament llegeix el text visible de la targeta de cada quadern a la llista, com el **nom del quadern, el nombre de fonts i la data**. Aquestes dades s'utilitzen exclusivament per identificar el quadern, associar-li les teves etiquetes i permetre la cerca.
 - **Sense manipulació de dades:** l'extensió no modifica ni manipula els teus quaderns de cap forma. Només afegeix una capa visual d'organització sobre la interfície existent de Google.
 - **Les teves dades són teves:** tota la configuració s'emmagatzema al teu compte de Google (via Chrome Sync) i només tu hi tens accés.
 
@@ -37,7 +37,9 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 
 Atès que Gemini Notebook no exposa identificadors únics interns en totes les seves vistes, l'extensió utilitza una "petjada digital" basada en metadades per identificar cada quadern. 
 
-Si tens diversos quaderns amb el **mateix nom, mateix nombre de fonts i mateixa data**, l'extensió detectarà una **col·lisió** a la vista de llista i bloquejarà l'etiquetatge per seguretat per evitar errors d'associació. En aquests casos, apareixerà una icona d'avís (⚠️) i hauràs d'utilitzar la **vista de miniatures** (quadrícula) per etiquetar-los, ja que en aquesta vista sí que és possible obtenir un identificador único real.
+Aquesta petjada s'obté a partir del **nom del quadern i el seu nombre de fonts**. Del nom s'ignoren majúscules, accents, espais i signes de puntuació, i només es tenen en compte els **primers 30 caràcters** resultants. Per això, dos quaderns poden compartir petjada encara que els seus noms no siguin idèntics, per exemple «Unitat didàctica de Matemàtiques – Tema 1» i «Unitat didàctica de Matemàtiques – Tema 2» si tots dos tenen el mateix nombre de fonts.
+
+Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una **col·lisió** a la vista de llista i bloquejarà l'etiquetatge per seguretat per evitar errors d'associació. En aquests casos, apareixerà una icona d'avís (⚠️) i hauràs d'utilitzar la **vista de miniatures** (quadrícula) per etiquetar-los, ja que en aquesta vista sí que és possible obtenir un identificador únic real.
 
 ---
 
@@ -52,6 +54,7 @@ Si tens diversos quaderns amb el **mateix nom, mateix nombre de fonts i mateixa 
 *   **ID d'extensió predefinit:** el `manifest.json` inclou una clau pública (`key`) per assegurar que l'ID de l'extensió sigui idèntic en totes les instal·lacions manuals. Això és indispensable perquè Chrome Sync reconegui que es tracta de la mateixa extensió i permeti la sincronització. **Important:** tot i que l'ID sigui el mateix per a tots els usuaris d'aquest repositori, les teves dades estan vinculades exclusivament al teu compte de Google i ningú més pot accedir-hi.
 *   **Permisos:**
     *   `storage`: per guardar i sincronitzar les teves etiquetes i preferències.
+    *   `activeTab`: només en fer clic a la icona de l'extensió, per comprovar si la pestanya actual ja és Gemini Notebook i, si no ho és, obrir-lo en una pestanya nova.
 
 ---
 
@@ -62,7 +65,7 @@ NotebookLM Organizer integra un motor de sincronització adaptatiu que detecta a
 Atès que Google Chrome pot eliminar les dades de sincronització en desinstal·lar una extensió carregada manualment (Mode Dev), s'ha implementat un sistema de **redundància dual** i un **assistent de resolució de conflictes**.
 
 ### 🛠️ Modes de seguretat en desenvolupament (instal·lació manual)
-Mentre l'extensió s'utilitzi en mode de desenvolupament, disposaràs de tres nivells de protecció configurables des del modal de gestió d'etiquetes:
+Mentre l'extensió s'utilitzi en mode de desenvolupament, disposaràs de tres nivells de protecció configurables des de la secció **Avançat** (desplegable) del modal de gestió d'etiquetes:
 
 <p align="center">
   <img src="assets/modos-sync-dev-ca.png" alt="Modes de sincronització">
@@ -105,7 +108,7 @@ Si l'extensió s'instal·la des de la botiga oficial, detecta l'entorn i simplif
 
 ## ⚠️ Recomanacions de seguretat
 
--   **Exportació manual (💾):** independentment del mode d'instal·lació, es recomana realitzar còpies de seguretat periòdiques descarregant la configuració en format JSON. És la xarxa de seguretat definitiva per si tota la resta falla. *Shit happens* 😅.
+-   **Exportació manual (botó d'exportar del modal de gestió):** independentment del mode d'instal·lació, es recomana realitzar còpies de seguretat periòdiques descarregant la configuració en format JSON. És la xarxa de seguretat definitiva per si tota la resta falla. *Shit happens* 😅.
 -   **Conserva sempre un "guardià" (només mode dev):** mentre mantinguis l'extensió instal·lada en almenys un dispositiu, les teves dades es podran recuperar automàticament en els altres gràcies a la redundància local.
 -   **Actualitzacions (només mode dev):** per instal·lar una nova versió del codi, no cal desinstal·lar l'extensió. Simplement sobreescriu els fitxers a la teva carpeta local i prem el botó de recàrrega a `chrome://extensions`.
 
