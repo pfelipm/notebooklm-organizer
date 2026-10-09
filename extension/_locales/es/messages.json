@@ -106,5 +106,7 @@
   "undo_tag_added_other": { "message": "Etiqueta «$1» aplicada a $2 cuadernos" },
   "undo_tag_removed_one": { "message": "Etiqueta «$1» quitada de 1 cuaderno" },
   "undo_tag_removed_other": { "message": "Etiqueta «$1» quitada de $2 cuadernos" },
-  "undo_action": { "message": "Deshacer" }
+  "undo_action": { "message": "Deshacer" },
+  "modal_priority_on": { "message": "Prioritaria: se muestra primero en los cuadernos. Entre varias prioritarias, se respeta el orden en que se asignaron a cada cuaderno (clic para quitar)" },
+  "modal_priority_off": { "message": "Marcar como prioritaria: se mostrará primero en los cuadernos. Entre varias prioritarias, se respeta el orden en que se asignaron a cada cuaderno" }
 }

@@ -145,6 +145,22 @@ function getTagColor(tagName) {
     return /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#1a73e8';
 }
 
+// Etiquetas prioritarias: se muestran primero en los cuadernos, así son las últimas en quedar tras "+N"
+function isPriorityTag(tagName) {
+    return tagConfig[tagName]?.priority === true;
+}
+
+function orderTagsForDisplay(tags) {
+    return [...tags.filter(isPriorityTag), ...tags.filter(tag => !isPriorityTag(tag))];
+}
+
+function setTagPriority(tag, on) {
+    hasInteracted = true;
+    if (!tagConfig[tag]) tagConfig[tag] = {};
+    if (on) tagConfig[tag].priority = true; else delete tagConfig[tag].priority;
+    saveAllData(); updateUI();
+}
+
 // Texto blanco u oscuro según cuál contraste más con el fondo (luminancia relativa WCAG)
 const DARK_TEXT = '#202124';
 function getContrastText(hex) {
@@ -172,6 +188,8 @@ const ICON_PATHS = {
     edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
     label: 'M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z',
+    star: 'M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+    starBorder: 'm22 9.24-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z',
     warning: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
     expand: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
     search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'
@@ -349,7 +367,7 @@ function renderTags(container, id) {
   if (!id || id.startsWith('collision:')) return;
   const tags = notebookTags[id] || [];
 
-  tags.forEach(tag => container.appendChild(createTagElement(tag, id)));
+  orderTagsForDisplay(tags).forEach(tag => container.appendChild(createTagElement(tag, id)));
   if (tags.length > 0) {
       const moreEl = document.createElement('span');
       moreEl.className = 'nblm-more-tags';
@@ -825,6 +843,7 @@ function showManagementModal() {
                         <span class="nblm-edit-icon">${icon('edit', 14)}</span>
                     </div>
                     <span class="nblm-tag-count">${formatNotebookCount(count)}</span>
+                    <button type="button" class="nblm-btn-icon nblm-priority-btn" aria-pressed="${isPriorityTag(tag)}" title="${t(isPriorityTag(tag) ? 'modal_priority_on' : 'modal_priority_off')}" aria-label="${t(isPriorityTag(tag) ? 'modal_priority_on' : 'modal_priority_off')}: ${escapeHTML(tag)}">${icon(isPriorityTag(tag) ? 'star' : 'starBorder', 18)}</button>
                     <button type="button" class="nblm-btn-icon danger" title="${t('modal_btn_delete_hint')}" aria-label="${t('modal_btn_delete_hint')}: ${escapeHTML(tag)}">${icon('delete', 18)}</button>
                 </div>
                 <div class="nblm-field-error" role="alert" hidden></div>
@@ -846,6 +865,12 @@ function showManagementModal() {
             input.onkeydown = (e) => {
                 if (e.key === 'Enter') input.blur();
                 else if (e.key === 'Escape') { input.value = tag; input.blur(); }
+            };
+
+            item.querySelector('.nblm-priority-btn').onclick = () => {
+                setTagPriority(tag, !isPriorityTag(tag));
+                renderList();
+                [...overlay.querySelectorAll('.nblm-manage-item')].find(i => i.querySelector('.nblm-tag-edit-input').defaultValue === tag)?.querySelector('.nblm-priority-btn')?.focus();
             };
 
             const dot = item.querySelector('.nblm-color-dot');
@@ -1205,7 +1230,7 @@ function showFullTagsTooltip(anchor, id, sticky) {
     const rect = anchor.getBoundingClientRect();
     tooltip.style.top = `${rect.bottom + window.scrollY}px`;
     tooltip.style.left = `${rect.left + window.scrollX}px`;
-    (notebookTags[id] || []).forEach(t => tooltip.appendChild(createTagElement(t, id, true)));
+    orderTagsForDisplay(notebookTags[id] || []).forEach(t => tooltip.appendChild(createTagElement(t, id, true)));
     document.body.appendChild(tooltip);
     activeTooltip = tooltip;
 }
@@ -1222,7 +1247,7 @@ function refreshTooltip() {
     // Vista de paso (hover) sobre una tarjeta redibujada: la cerramos; si otra etiqueta queda bajo
     // el puntero, su mouseenter la volverá a abrir con los datos actualizados
     if (tags.length === 0 || !inUse) { closeTooltip(); return; }
-    activeTooltip.replaceChildren(...tags.map(tag => createTagElement(tag, id, true)));
+    activeTooltip.replaceChildren(...orderTagsForDisplay(tags).map(tag => createTagElement(tag, id, true)));
 }
 function closePopover() { if (currentPopover) { currentPopover.remove(); currentPopover = null; } }
 function addGlobalTag(tag) { 

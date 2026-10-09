@@ -106,5 +106,7 @@
   "undo_tag_added_other": { "message": "Tag “$1” added to $2 notebooks" },
   "undo_tag_removed_one": { "message": "Tag “$1” removed from 1 notebook" },
   "undo_tag_removed_other": { "message": "Tag “$1” removed from $2 notebooks" },
-  "undo_action": { "message": "Undo" }
+  "undo_action": { "message": "Undo" },
+  "modal_priority_on": { "message": "Priority tag: shown first on notebooks. Among several priority tags, the order in which they were assigned to each notebook is kept (click to remove)" },
+  "modal_priority_off": { "message": "Mark as priority: it will be shown first on notebooks. Among several priority tags, the order in which they were assigned to each notebook is kept" }
 }

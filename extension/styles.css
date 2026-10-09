@@ -1581,3 +1581,27 @@ body.dark-theme .nblm-snackbar-action {
 body.dark-theme .nblm-snackbar-action:hover {
   background: rgba(26, 115, 232, 0.08);
 }
+
+/* --- ETIQUETAS PRIORITARIAS (panel de gestión) --- */
+.nblm-priority-btn {
+  opacity: 0.45;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.nblm-manage-item:hover .nblm-priority-btn,
+.nblm-priority-btn:focus-visible {
+  opacity: 0.8;
+}
+
+.nblm-priority-btn[aria-pressed="true"] {
+  opacity: 1;
+  color: #f9ab00;
+}
+
+.nblm-priority-btn[aria-pressed="true"]:hover {
+  color: #e37400;
+}
+
+body.dark-theme .nblm-priority-btn[aria-pressed="true"] {
+  color: #fdd663;
+}
