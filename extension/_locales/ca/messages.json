@@ -101,5 +101,10 @@
   "btn_deselect_all": { "message": "Desselecciona-ho tot" },
   "btn_tag_selected": { "message": "Etiqueta" },
   "btn_exit_selection": { "message": "Surt del mode selecció" },
-  "popover_title_multi": { "message": "Etiqueta $1 quaderns" }
+  "popover_title_multi": { "message": "Etiqueta $1 quaderns" },
+  "undo_tag_added_one": { "message": "Etiqueta «$1» aplicada a 1 quadern" },
+  "undo_tag_added_other": { "message": "Etiqueta «$1» aplicada a $2 quaderns" },
+  "undo_tag_removed_one": { "message": "Etiqueta «$1» treta d'1 quadern" },
+  "undo_tag_removed_other": { "message": "Etiqueta «$1» treta de $2 quaderns" },
+  "undo_action": { "message": "Desfés" }
 }

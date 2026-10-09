@@ -101,5 +101,10 @@
   "btn_deselect_all": { "message": "Deseleccionar todo" },
   "btn_tag_selected": { "message": "Etiquetar" },
   "btn_exit_selection": { "message": "Salir del modo selección" },
-  "popover_title_multi": { "message": "Etiquetar $1 cuadernos" }
+  "popover_title_multi": { "message": "Etiquetar $1 cuadernos" },
+  "undo_tag_added_one": { "message": "Etiqueta «$1» aplicada a 1 cuaderno" },
+  "undo_tag_added_other": { "message": "Etiqueta «$1» aplicada a $2 cuadernos" },
+  "undo_tag_removed_one": { "message": "Etiqueta «$1» quitada de 1 cuaderno" },
+  "undo_tag_removed_other": { "message": "Etiqueta «$1» quitada de $2 cuadernos" },
+  "undo_action": { "message": "Deshacer" }
 }

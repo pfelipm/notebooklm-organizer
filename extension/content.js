@@ -584,15 +584,62 @@ function handleSelectionKeys(e) {
 }
 
 // Añade o quita una etiqueta en varios cuadernos de una vez: un solo guardado y un solo redibujado
+// En cambios sobre varios cuadernos guarda una copia previa y ofrece deshacer.
+// Devuelve cuántos cuadernos han cambiado realmente.
 function applyTagToNotebooks(ids, tag, add) {
     hasInteracted = true;
+    const previous = new Map(); // id -> etiquetas antes del cambio (undefined si no tenía entrada)
     ids.forEach(id => {
         const current = notebookTags[id] || [];
-        if (add && !current.includes(tag)) notebookTags[id] = [...current, tag];
-        else if (!add && current.includes(tag)) notebookTags[id] = current.filter(t => t !== tag);
+        const changes = add ? !current.includes(tag) : current.includes(tag);
+        if (!changes) return;
+        previous.set(id, notebookTags[id] ? [...notebookTags[id]] : undefined);
+        notebookTags[id] = add ? [...current, tag] : current.filter(t => t !== tag);
     });
     saveAllData();
     updateUI();
+    if (ids.length > 1 && previous.size > 0) {
+        const n = previous.size;
+        const key = (add ? 'undo_tag_added' : 'undo_tag_removed') + (n === 1 ? '_one' : '_other');
+        showUndoSnackbar(t(key, tag, n), () => {
+            previous.forEach((tags, id) => { if (tags) notebookTags[id] = tags; else delete notebookTags[id]; });
+            hasInteracted = true;
+            saveAllData();
+            updateUI();
+            currentPopover?._render?.(); // Si la ventana de etiquetado sigue abierta, refleja el estado restaurado
+        });
+    }
+    return previous.size;
+}
+
+// Aviso inferior con acción de deshacer. Solo hay uno a la vez: un cambio nuevo sustituye al anterior.
+let undoSnackbarTimer = null;
+function showUndoSnackbar(message, onUndo) {
+    document.querySelector('.nblm-snackbar')?.remove();
+    clearTimeout(undoSnackbarTimer);
+    const bar = document.createElement('div');
+    bar.className = 'nblm-snackbar';
+    bar.setAttribute('role', 'status');
+    bar.setAttribute('aria-live', 'polite');
+    const text = document.createElement('span');
+    text.textContent = message; // textContent: el nombre de la etiqueta no se interpreta como HTML
+    const undoBtn = document.createElement('button');
+    undoBtn.type = 'button';
+    undoBtn.className = 'nblm-snackbar-action';
+    undoBtn.textContent = t('undo_action');
+    bar.append(text, undoBtn);
+
+    const close = () => { clearTimeout(undoSnackbarTimer); bar.remove(); };
+    const startTimer = () => { clearTimeout(undoSnackbarTimer); undoSnackbarTimer = setTimeout(close, 6000); };
+    undoBtn.onclick = () => { close(); onUndo(); };
+    // Se pausa mientras el puntero o el foco están en el aviso
+    bar.onmouseenter = () => clearTimeout(undoSnackbarTimer);
+    bar.onmouseleave = startTimer;
+    bar.addEventListener('focusin', () => clearTimeout(undoSnackbarTimer));
+    bar.addEventListener('focusout', startTimer);
+
+    document.body.appendChild(bar);
+    startTimer();
 }
 
 function updateTabContext() {
@@ -1144,7 +1191,14 @@ function showTagPopover(target) {
         <div class="tag-list" id="nblm-list"></div>
         <div id="nblm-create"></div>
     `;
-    const close = () => { overlay.remove(); currentPopover = null; };
+    let changed = false;
+    const apply = (tag, add) => { if (applyTagToNotebooks(ids, tag, add) > 0) changed = true; };
+    // Tras etiquetar una selección, el flujo habitual ha terminado: salimos del modo selección (el aviso
+    // de deshacer sigue disponible). Si se cierra sin cambios, la selección se conserva.
+    const close = () => {
+        overlay.remove(); currentPopover = null;
+        if (changed && ids.length > 1 && selectionMode) setSelectionMode(false);
+    };
     closeOnEscape(overlay, close);
     pop.querySelector('#nblm-close').onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
@@ -1168,7 +1222,7 @@ function showTagPopover(target) {
                     <span class="nblm-tag" style="background-color:${color}; color:${getContrastText(color)}; cursor:pointer; max-width:160px;">${escapeHTML(t)}</span>
                     ${state === 'some' ? `<span class="nblm-check-partial">${withTag}/${ids.length}</span>` : ''}
                 `;
-                item.onclick = (e) => { e.stopPropagation(); applyTagToNotebooks(ids, t, state !== 'all'); render(); input.focus(); };
+                item.onclick = (e) => { e.stopPropagation(); apply(t, state !== 'all'); render(); input.focus(); };
                 listContainer.appendChild(item);
             });
         const showCreate = q && !globalTags.some(t => t.toLowerCase() === q);
@@ -1176,7 +1230,7 @@ function showTagPopover(target) {
             const createOpt = document.createElement('div');
             createOpt.className = 'nblm-create-option';
             createOpt.innerHTML = `<span>${t('popover_create_tag')}</span> <span class="nblm-tag" style="background-color:#1a73e8; color:${getContrastText('#1a73e8')}; margin-left:4px;">${escapeHTML(input.value)}</span>`;
-            createOpt.onclick = () => { const newTag = input.value.trim(); addGlobalTag(newTag); applyTagToNotebooks(ids, newTag, true); input.value = ''; render(); };
+            createOpt.onclick = () => { const newTag = input.value.trim(); addGlobalTag(newTag); apply(newTag, true); input.value = ''; render(); };
             pop.querySelector('#nblm-create').innerHTML = ''; pop.querySelector('#nblm-create').appendChild(createOpt);
         } else pop.querySelector('#nblm-create').innerHTML = '';
     };
@@ -1188,14 +1242,15 @@ function showTagPopover(target) {
             if (existing) {
                 // Mismo criterio que al pulsar: si ya la tienen todos se quita, si no se añade a todos
                 const allHave = ids.every(id => (notebookTags[id] || []).includes(existing));
-                applyTagToNotebooks(ids, existing, !allHave);
-            } else { addGlobalTag(val); applyTagToNotebooks(ids, val, true); }
+                apply(existing, !allHave);
+            } else { addGlobalTag(val); apply(val, true); }
             input.value = ''; render();
         }
     };
     overlay.appendChild(pop);
     document.body.appendChild(overlay);
     currentPopover = overlay;
+    overlay._render = render; // Para refrescar la ventana desde fuera (p. ej., al deshacer)
     render();
     // `autofocus` no actúa en elementos insertados tras la carga: sin esto, lo tecleado iría a la página
     input.focus();

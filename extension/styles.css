@@ -1490,3 +1490,71 @@ body.nblm-selecting [role="row"].nblm-selected {
 body.nblm-selecting .nblm-processed .nblm-tag .remove-tag {
   visibility: hidden;
 }
+
+/* --- AVISO CON DESHACER (snackbar) --- */
+.nblm-snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35000; /* Por encima de la ventana de etiquetado: se puede deshacer sin cerrarla */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(560px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 10px 8px 10px 16px;
+  border-radius: 8px;
+  background: #323232;
+  color: #f1f3f4;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  box-shadow: var(--nblm-shadow-lg);
+  animation: nblm-snackbar-in 0.15s ease-out;
+}
+
+/* Con la barra flotante de selección visible, el aviso se coloca encima de ella */
+body.nblm-selecting .nblm-snackbar {
+  bottom: 96px;
+}
+
+@keyframes nblm-snackbar-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.nblm-snackbar-action {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  color: #8ab4f8;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.nblm-snackbar-action:hover {
+  background: rgba(138, 180, 248, 0.12);
+}
+
+.nblm-snackbar-action:focus-visible {
+  outline: 2px solid #8ab4f8;
+  outline-offset: 2px;
+}
+
+/* Modo oscuro: aviso claro sobre fondo oscuro, como en Material */
+body.dark-theme .nblm-snackbar {
+  background: #e8eaed;
+  color: #202124;
+}
+
+body.dark-theme .nblm-snackbar-action {
+  color: #1a73e8;
+}
+
+body.dark-theme .nblm-snackbar-action:hover {
+  background: rgba(26, 115, 232, 0.08);
+}
