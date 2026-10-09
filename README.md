@@ -55,13 +55,32 @@ Cada cuaderno muestra tantas etiquetas como caben en su espacio y agrupa el rest
 
 ---
 
-## ⚠️ Nota importante sobre la vista de lista
+## 🔎 Cómo identifica la extensión cada cuaderno
 
-Debido a que Gemini Notebook no expone identificadores únicos internos en todas sus vistas, la extensión utiliza una "huella digital" basada en metadatos para identificar cada cuaderno. 
+### El problema de partida
+Para asociar etiquetas a un cuaderno, la extensión necesita un identificador estable. En la vista de cuadrícula, Gemini Notebook incluye el **identificador único real** de cada cuaderno, pero cuando se creó la extensión la **vista de lista no lo exponía**. Ante esa limitación se diseñó un mecanismo alternativo: una **huella** calculada a partir de los metadatos visibles de cada cuaderno.
 
-Esta huella se obtiene a partir del **nombre del cuaderno y su número de fuentes**. Del nombre se ignoran mayúsculas, tildes, espacios y signos de puntuación, y solo se tienen en cuenta los **primeros 30 caracteres** resultantes. Por ello, dos cuadernos pueden compartir huella aunque sus nombres no sean idénticos, por ejemplo «Unidad didáctica de Matemáticas – Tema 1» y «Unidad didáctica de Matemáticas – Tema 2» si ambos tienen el mismo número de fuentes.
+### La huella: cómo funciona y sus límites
+La huella se obtiene del **nombre del cuaderno y su número de fuentes**. Del nombre se ignoran mayúsculas, tildes, espacios y signos de puntuación, y solo cuentan los **primeros 30 caracteres** resultantes; la fecha no interviene. Es un compromiso: con más datos la huella distinguiría mejor los cuadernos, pero también cambiaría con más frecuencia.
 
-Si tienes varios cuadernos con la **misma huella**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real. Por el mismo motivo, estos cuadernos tampoco se pueden seleccionar en el modo de etiquetado múltiple desde la vista de lista.
+Tiene dos limitaciones:
+- **Colisiones:** dos cuadernos distintos pueden compartir huella, por ejemplo «Unidad didáctica de Matemáticas – Tema 1» y «Unidad didáctica de Matemáticas – Tema 2» si tienen el mismo número de fuentes. Como la extensión no puede saber cuál es cuál, **bloquea su etiquetado y su selección** y muestra un aviso (⚠️) para no asignar etiquetas al cuaderno equivocado.
+- **Inestabilidad:** si cambia el nombre del cuaderno o su número de fuentes, cambia también la huella.
+
+Para compensarlo, la extensión memoriza la correspondencia **huella → identificador real** cada vez que ve un cuaderno con su identificador (por ejemplo, en la cuadrícula), de modo que en la vista de lista puede recuperar el identificador a partir de la huella. Y si una etiqueta llega a asignarse solo con la huella, se guarda provisionalmente con ella y se traslada al identificador real en cuanto este aparece.
+
+### Qué ha cambiado
+Actualmente Gemini Notebook **sí incluye el enlace a cada cuaderno, con su identificador real, también en la vista de lista**. La extensión lo busca en este orden: el identificador del botón de la tarjeta, el enlace al cuaderno y cualquier identificador presente en su código. Solo si ninguno está disponible recurre a la tabla de correspondencias y, en último término, a la huella.
+
+En la práctica, **hoy todos los cuadernos se identifican por su identificador real en ambas vistas** y la huella queda como **mecanismo de respaldo** por si Google vuelve a retirar ese enlace. Las colisiones solo podrían darse en ese caso.
+
+### Efecto en el almacenamiento sincronizado
+La tabla de correspondencias crecía con cada cuaderno visto, nunca se depuraba y se sincronizaba con Chrome Sync, cuyo espacio es muy limitado (unos 100 KB por extensión). Desde la versión 1.2:
+- **ya no se sincroniza:** se guarda solo en el equipo local, que dispone de mucho más espacio;
+- **solo conserva los cuadernos con etiquetas**, los únicos para los que resulta útil;
+- al actualizar, la copia antigua desaparece de la nube en el siguiente guardado. En una prueba con 800 correspondencias, el espacio sincronizado pasó de unos 54 KB a 0,5 KB.
+
+No sincronizarla no tiene inconvenientes prácticos: la tabla se reconstruye sola al navegar, así que en otro equipo se vuelve a aprender en cuanto se ven los cuadernos.
 
 ---
 
@@ -72,7 +91,7 @@ Si tienes varios cuadernos con la **misma huella**, la extensión detectará una
 *   **Chrome Storage Sync & Local:** utiliza la API de almacenamiento para mantener las etiquetas sincronizadas entre dispositivos y realizar caché local de seguridad.
 *   **Dynamic i18n:** implementa un sistema de localización propio que permite el cambio de idioma instantáneo sin necesidad de recargar la página.
 *   **MutationObserver:** se utiliza para detectar de forma eficiente y reactiva cuándo se añaden nuevos cuadernos a la lista o se producen cambios en la navegación.
-*   **Fragmentación de datos (chunking):** sistema para superar el límite de 8 KB por elemento de Chrome Sync dividiendo los datos en fragmentos medidos en bytes reales. Los fragmentos nuevos se escriben antes de borrar los sobrantes, de modo que un fallo de escritura nunca deja la nube vacía. El panel de gestión muestra el espacio usado (Chrome permite unos 100 KB por extensión), la extensión avisa al llegar al 80 % y, si una escritura falla, lo indica en pantalla. La tabla interna que relaciona huellas e identificadores se guarda solo en el equipo local para no consumir cuota.
+*   **Fragmentación de datos (chunking):** sistema para superar el límite de 8 KB por elemento de Chrome Sync dividiendo los datos en fragmentos medidos en bytes reales. Los fragmentos nuevos se escriben antes de borrar los sobrantes, de modo que un fallo de escritura nunca deja la nube vacía. El panel de gestión muestra el espacio usado (Chrome permite unos 100 KB por extensión), la extensión avisa al llegar al 80 % y, si una escritura falla, lo indica en pantalla. La tabla que relaciona huellas e identificadores ya no ocupa espacio sincronizado (consulta «Cómo identifica la extensión cada cuaderno»).
 *   **Rendimiento:** las lecturas y escrituras del DOM se agrupan y los cuadernos se analizan en una sola pasada, lo que mantiene la interfaz fluida incluso con cientos de cuadernos.
 *   **ID de extensión predefinido:** el `manifest.json` incluye una clave pública (`key`) para asegurar que el ID de la extensión sea idéntico en todas tus instalaciones manuales. Esto es indispensable para que Chrome Sync reconozca que se trata de la misma extensión y permita la sincronización. **Importante:** aunque el ID sea el mismo para todos los usuarios de este repositorio, tus datos están vinculados exclusivamente a tu cuenta de Google y nadie más puede acceder a ellos.
 *   **Permisos:**

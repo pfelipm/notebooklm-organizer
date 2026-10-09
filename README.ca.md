@@ -55,13 +55,32 @@ Cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en **«+N»*
 
 ---
 
-## ⚠️ Nota important sobre la vista de llista
+## 🔎 Com identifica l'extensió cada quadern
 
-Atès que Gemini Notebook no exposa identificadors únics interns en totes les seves vistes, l'extensió utilitza una "petjada digital" basada en metadades per identificar cada quadern. 
+### El problema de partida
+Per associar etiquetes a un quadern, l'extensió necessita un identificador estable. A la vista de quadrícula, Gemini Notebook inclou l'**identificador únic real** de cada quadern, però quan es va crear l'extensió la **vista de llista no l'exposava**. Davant d'aquesta limitació es va dissenyar un mecanisme alternatiu: una **petjada** calculada a partir de les metadades visibles de cada quadern.
 
-Aquesta petjada s'obté a partir del **nom del quadern i el seu nombre de fonts**. Del nom s'ignoren majúscules, accents, espais i signes de puntuació, i només es tenen en compte els **primers 30 caràcters** resultants. Per això, dos quaderns poden compartir petjada encara que els seus noms no siguin idèntics, per exemple «Unitat didàctica de Matemàtiques – Tema 1» i «Unitat didàctica de Matemàtiques – Tema 2» si tots dos tenen el mateix nombre de fonts.
+### La petjada: com funciona i els seus límits
+La petjada s'obté del **nom del quadern i el seu nombre de fonts**. Del nom s'ignoren majúscules, accents, espais i signes de puntuació, i només compten els **primers 30 caràcters** resultants; la data no hi intervé. És un compromís: amb més dades la petjada distingiria millor els quaderns, però també canviaria amb més freqüència.
 
-Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una **col·lisió** a la vista de llista i bloquejarà l'etiquetatge per seguretat per evitar errors d'associació. En aquests casos, apareixerà una icona d'avís (⚠️) i hauràs d'utilitzar la **vista de miniatures** (quadrícula) per etiquetar-los, ja que en aquesta vista sí que és possible obtenir un identificador únic real. Pel mateix motiu, aquests quaderns tampoc no es poden seleccionar en el mode d'etiquetatge múltiple des de la vista de llista.
+Té dues limitacions:
+- **Col·lisions:** dos quaderns diferents poden compartir petjada, per exemple «Unitat didàctica de Matemàtiques – Tema 1» i «Unitat didàctica de Matemàtiques – Tema 2» si tenen el mateix nombre de fonts. Com que l'extensió no pot saber quin és quin, **en bloqueja l'etiquetatge i la selecció** i mostra un avís (⚠️) per no assignar etiquetes al quadern equivocat.
+- **Inestabilitat:** si canvia el nom del quadern o el seu nombre de fonts, també canvia la petjada.
+
+Per compensar-ho, l'extensió memoritza la correspondència **petjada → identificador real** cada vegada que veu un quadern amb el seu identificador (per exemple, a la quadrícula), de manera que a la vista de llista pot recuperar l'identificador a partir de la petjada. I si una etiqueta s'arriba a assignar només amb la petjada, es desa provisionalment amb ella i es trasllada a l'identificador real tan bon punt aquest apareix.
+
+### Què ha canviat
+Actualment Gemini Notebook **sí que inclou l'enllaç a cada quadern, amb el seu identificador real, també a la vista de llista**. L'extensió el busca en aquest ordre: l'identificador del botó de la targeta, l'enllaç al quadern i qualsevol identificador present al seu codi. Només si no n'hi ha cap de disponible recorre a la taula de correspondències i, en darrer terme, a la petjada.
+
+A la pràctica, **avui tots els quaderns s'identifiquen pel seu identificador real a totes dues vistes** i la petjada queda com a **mecanisme de reserva** per si Google torna a retirar aquest enllaç. Les col·lisions només es podrien donar en aquest cas.
+
+### Efecte en l'emmagatzematge sincronitzat
+La taula de correspondències creixia amb cada quadern vist, no es depurava mai i es sincronitzava amb Chrome Sync, l'espai del qual és molt limitat (uns 100 KB per extensió). Des de la versió 1.2:
+- **ja no es sincronitza:** es desa només a l'equip local, que disposa de molt més espai;
+- **només conserva els quaderns amb etiquetes**, els únics per als quals resulta útil;
+- en actualitzar, la còpia antiga desapareix del núvol en el desament següent. En una prova amb 800 correspondències, l'espai sincronitzat va passar d'uns 54 KB a 0,5 KB.
+
+No sincronitzar-la no té inconvenients pràctics: la taula es reconstrueix sola en navegar, de manera que en un altre equip es torna a aprendre tan bon punt es veuen els quaderns.
 
 ---
 
@@ -72,7 +91,7 @@ Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una
 *   **Chrome Storage Sync & Local:** utilitza l'API d'emmagatzematge per mantenir les etiquetes sincronitzades entre dispositius i realitzar cachè local de seguretat.
 *   **Dynamic i18n:** implementa un sistema de localització propi que permet el canvi d'idioma instantani sense necessitat de recarregar la pàgina.
 *   **MutationObserver:** s'utilitza per detectar de forma eficient i reactiva quan s'afegeixen nous quaderns a la llista o es produeixen canvis en la navegació.
-*   **Fragmentació de dades (chunking):** sistema per superar el límit de 8 KB per element de Chrome Sync dividint les dades en fragments mesurats en bytes reals. Els fragments nous s'escriuen abans d'esborrar els sobrants, de manera que un error d'escriptura mai no deixa el núvol buit. El tauler de gestió mostra l'espai utilitzat (Chrome permet uns 100 KB per extensió), l'extensió avisa en arribar al 80 % i, si una escriptura falla, ho indica a la pantalla. La taula interna que relaciona petjades i identificadors es desa només a l'equip local per no consumir quota.
+*   **Fragmentació de dades (chunking):** sistema per superar el límit de 8 KB per element de Chrome Sync dividint les dades en fragments mesurats en bytes reals. Els fragments nous s'escriuen abans d'esborrar els sobrants, de manera que un error d'escriptura mai no deixa el núvol buit. El tauler de gestió mostra l'espai utilitzat (Chrome permet uns 100 KB per extensió), l'extensió avisa en arribar al 80 % i, si una escriptura falla, ho indica a la pantalla. La taula que relaciona petjades i identificadors ja no ocupa espai sincronitzat (consulta «Com identifica l'extensió cada quadern»).
 *   **Rendiment:** les lectures i escriptures del DOM s'agrupen i els quaderns s'analitzen en una sola passada, cosa que manté la interfície fluida fins i tot amb centenars de quaderns.
 *   **ID d'extensió predefinit:** el `manifest.json` inclou una clau pública (`key`) per assegurar que l'ID de l'extensió sigui idèntic en totes les instal·lacions manuals. Això és indispensable perquè Chrome Sync reconegui que es tracta de la mateixa extensió i permeti la sincronització. **Important:** tot i que l'ID sigui el mateix per a tots els usuaris d'aquest repositori, les teves dades estan vinculades exclusivament al teu compte de Google i ningú més pot accedir-hi.
 *   **Permisos:**

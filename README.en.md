@@ -55,13 +55,32 @@ Each notebook shows as many tags as fit in its space and groups the rest under *
 
 ---
 
-## ⚠️ Important Note on List View
+## 🔎 How the Extension Identifies Each Notebook
 
-Since Gemini Notebook does not expose internal unique identifiers in all its views, the extension uses a metadata-based "fingerprint" to identify each notebook.
+### The Original Problem
+To link tags to a notebook, the extension needs a stable identifier. In grid view, Gemini Notebook includes each notebook's **real unique identifier**, but when the extension was created the **list view did not expose it**. To work around that limitation, an alternative mechanism was designed: a **fingerprint** computed from each notebook's visible metadata.
 
-This fingerprint is built from the **notebook name and its number of sources**. Case, accents, spaces, and punctuation in the name are ignored, and only the **first 30 resulting characters** are taken into account. As a result, two notebooks can share a fingerprint even if their names are not identical, for example "Unit Plan: Introduction to Algebra – Part 1" and "Unit Plan: Introduction to Algebra – Part 2" if both have the same number of sources.
+### The Fingerprint: How It Works and Its Limits
+The fingerprint is built from the **notebook name and its number of sources**. Case, accents, spaces, and punctuation in the name are ignored, and only the **first 30 resulting characters** count; the date is not used. It is a trade-off: more data would tell notebooks apart better, but the fingerprint would also change more often.
 
-If you have multiple notebooks with the **same fingerprint**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier. For the same reason, these notebooks cannot be selected in bulk tagging mode from the list view either.
+It has two limitations:
+- **Collisions:** two different notebooks can share a fingerprint, for example "Unit Plan: Introduction to Algebra – Part 1" and "Unit Plan: Introduction to Algebra – Part 2" if they have the same number of sources. Since the extension cannot tell them apart, it **blocks tagging and selecting them** and shows a warning (⚠️) so tags are never assigned to the wrong notebook.
+- **Instability:** if the notebook's name or number of sources changes, its fingerprint changes too.
+
+To compensate, the extension remembers the **fingerprint → real identifier** mapping every time it sees a notebook with its identifier (for example, in grid view), so in list view it can recover the identifier from the fingerprint. And if a tag ever gets assigned using only the fingerprint, it is stored provisionally under it and moved to the real identifier as soon as that becomes available.
+
+### What Has Changed
+Gemini Notebook now **includes the link to each notebook, with its real identifier, in the list view as well**. The extension looks for it in this order: the identifier on the card's button, the link to the notebook, and any identifier present in its markup. Only if none is available does it fall back to the mapping table and, as a last resort, to the fingerprint.
+
+In practice, **every notebook is now identified by its real identifier in both views**, and the fingerprint remains as a **fallback mechanism** in case Google removes that link again. Collisions could only happen in that case.
+
+### Effect on Synced Storage
+The mapping table grew with every notebook seen, was never cleaned up, and was synced through Chrome Sync, whose space is very limited (about 100 KB per extension). Since version 1.2:
+- **it is no longer synced:** it is stored only on the local device, which has far more space;
+- **it only keeps tagged notebooks**, the only ones it is useful for;
+- after updating, the old copy disappears from the cloud on the next save. In a test with 800 mappings, synced storage went from about 54 KB to 0.5 KB.
+
+Not syncing it has no practical drawbacks: the table rebuilds itself while you browse, so on another device it is learned again as soon as the notebooks are seen.
 
 ---
 
@@ -72,7 +91,7 @@ If you have multiple notebooks with the **same fingerprint**, the extension will
 *   **Chrome Storage Sync & Local:** Uses the Storage API to keep tags synchronized between devices and perform local safety caching.
 *   **Dynamic i18n:** Implements a custom localization system that allows for instant language changes without a page refresh.
 *   **MutationObserver:** Used to efficiently and reactively detect when new notebooks are added to the list or when navigation occurs.
-*   **Data Fragmentation (Chunking):** Overcomes Chrome Sync's 8 KB per-item limit by splitting data into chunks measured in real bytes. New chunks are written before leftover ones are removed, so a failed write never leaves the cloud empty. The management panel shows the space in use (Chrome allows about 100 KB per extension), the extension warns you at 80%, and any failed write is reported on screen. The internal table linking fingerprints to identifiers is stored only on the local device so it does not use up the quota.
+*   **Data Fragmentation (Chunking):** Overcomes Chrome Sync's 8 KB per-item limit by splitting data into chunks measured in real bytes. New chunks are written before leftover ones are removed, so a failed write never leaves the cloud empty. The management panel shows the space in use (Chrome allows about 100 KB per extension), the extension warns you at 80%, and any failed write is reported on screen. The table linking fingerprints to identifiers no longer uses synced space (see "How the Extension Identifies Each Notebook").
 *   **Performance:** DOM reads and writes are batched and notebooks are analyzed in a single pass, keeping the interface smooth even with hundreds of notebooks.
 *   **Predefined extension ID:** The `manifest.json` file includes a public key (`key`) to ensure the extension ID is identical across all manual installations. This is essential for Chrome Sync to recognize them as the same extension and allow synchronization. **Important:** Although the ID is the same for all users of this repository, your data is linked exclusively to your Google account, and no one else can access it.
 *   **Permissions:**
