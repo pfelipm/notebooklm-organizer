@@ -373,7 +373,14 @@ function createTagElement(tag, id, inTooltip = false) {
     tagEl.innerHTML = `<span>${escapeHTML(tag)}</span><span class="remove-tag">×</span>`;
     tagEl.querySelector('.remove-tag').onclick = (e) => { e.stopPropagation(); removeTagFromNotebook(id, tag); };
     if (!inTooltip) {
-        tagEl.onmouseenter = () => { if (tooltipTimeout) clearTimeout(tooltipTimeout); showFullTagsTooltip(tagEl, id, false); };
+        tagEl.onmouseenter = () => {
+            if (tooltipTimeout) clearTimeout(tooltipTimeout);
+            // Solo aporta algo si hay etiquetas ocultas tras "+N" o si el nombre de esta está recortado con "…"
+            const more = tagEl.parentElement?.querySelector(':scope > .nblm-more-tags');
+            const hasHidden = more && more.style.display !== 'none';
+            const isTruncated = tagEl.scrollWidth > tagEl.clientWidth;
+            if (hasHidden || isTruncated) showFullTagsTooltip(tagEl, id, false);
+        };
         tagEl.onmouseleave = () => { 
             tooltipTimeout = setTimeout(() => {
                 if (activeTooltip && activeTooltip.dataset.sticky !== 'true' && activeTooltip.dataset.hovered !== 'true') closeTooltip();
