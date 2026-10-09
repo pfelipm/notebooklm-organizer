@@ -23,6 +23,10 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 
 - 🏷️ **Etiquetado con colores:** crea etiquetas personalizadas con una paleta de colores vibrantes para categorizar tus proyectos visualmente.
 - 🔍 **Filtrado avanzado:** localiza cuadernos al instante combinando búsqueda por texto y filtros de etiquetas con lógica **Y (AND)** u **O (OR)**.
+- ✅ **Etiquetado múltiple:** selecciona varios cuadernos (clic, Mayús+clic o «Seleccionar visibles») y aplica o quita etiquetas a todos de una vez, con opción de deshacer.
+- ⭐ **Etiquetas prioritarias:** marca con una estrella las etiquetas que quieres ver siempre primero en cada cuaderno.
+- 📐 **Etiquetas ajustadas al espacio:** cada cuaderno muestra tantas etiquetas como caben, agrupando el resto en «+N», tanto en la vista de cuadrícula como en la de lista.
+- 🎛️ **Panel de gestión completo:** crea, renombra, colorea y elimina etiquetas viendo cuántos cuadernos tiene cada una, con filtro rápido, contraste automático del texto y uso completo con teclado.
 - 🌓 **Modo oscuro automático:** la interfaz se adapta automáticamente al tema (claro u oscuro) que tengas configurado en Gemini Notebook, respetando tu preferencia visual al 100%.
 - 🔄 **Sincronización automática:** tus etiquetas y preferencias se sincronizan automáticamente entre todos tus dispositivos mediante tu cuenta de Chrome.
 - 💾 **Respaldo granular:** exporta e importa tu configuración en formato JSON, permitiendo elegir qué elementos restaurar.
@@ -33,13 +37,31 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 
 ---
 
+## 🧰 Organización avanzada
+
+### ✅ Etiquetado múltiple
+1. Pulsa **Seleccionar** en la barra de la extensión. Aparece una barra flotante en la parte inferior.
+2. Marca los cuadernos: un **clic** selecciona uno, **Mayús+clic** selecciona un rango y **Seleccionar visibles** añade todos los que muestran la búsqueda y los filtros activos.
+3. Pulsa **Etiquetar**. Cada etiqueta indica si la tienen todos los cuadernos seleccionados, algunos (con su recuento) o ninguno: al pulsarla se añade a todos o, si ya la tienen todos, se quita de todos. También puedes crear una etiqueta nueva y aplicarla a la selección.
+4. Tras cada cambio aparece un aviso con **Deshacer** durante unos segundos. Al cerrar la ventana después de algún cambio, el modo selección termina; si la cierras sin cambios, la selección se conserva.
+
+**Esc** cierra la ventana y, pulsado de nuevo, sale del modo selección.
+
+### ⭐ Etiquetas prioritarias
+En el panel de gestión, la **estrella** de cada etiqueta la marca como prioritaria: en todos los cuadernos se mostrará antes que las demás, así será la última en quedar oculta tras «+N». Entre varias prioritarias, y también entre el resto, se respeta el **orden en que se asignaron a cada cuaderno**.
+
+### 📐 Etiquetas visibles en cada cuaderno
+Cada cuaderno muestra tantas etiquetas como caben en su espacio y agrupa el resto en **«+N»**; al pulsarlo se ven todas. Al pasar el puntero por una etiqueta solo aparece la vista con todas si hay alguna oculta o si su nombre está recortado. En la cuadrícula, las etiquetas ocupan la última línea de la tarjeta, alineadas con el icono de cuaderno compartido.
+
+---
+
 ## ⚠️ Nota importante sobre la vista de lista
 
 Debido a que Gemini Notebook no expone identificadores únicos internos en todas sus vistas, la extensión utiliza una "huella digital" basada en metadatos para identificar cada cuaderno. 
 
 Esta huella se obtiene a partir del **nombre del cuaderno y su número de fuentes**. Del nombre se ignoran mayúsculas, tildes, espacios y signos de puntuación, y solo se tienen en cuenta los **primeros 30 caracteres** resultantes. Por ello, dos cuadernos pueden compartir huella aunque sus nombres no sean idénticos, por ejemplo «Unidad didáctica de Matemáticas – Tema 1» y «Unidad didáctica de Matemáticas – Tema 2» si ambos tienen el mismo número de fuentes.
 
-Si tienes varios cuadernos con la **misma huella**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real.
+Si tienes varios cuadernos con la **misma huella**, la extensión detectará una **colisión** en la vista de lista y bloqueará el etiquetado por seguridad para evitar errores de asociación. En estos casos, aparecerá un icono de aviso (⚠️) y deberás utilizar la **vista de miniaturas** (cuadrícula) para etiquetarlos, ya que en esa vista sí es posible obtener un identificador único real. Por el mismo motivo, estos cuadernos tampoco se pueden seleccionar en el modo de etiquetado múltiple desde la vista de lista.
 
 ---
 
@@ -50,7 +72,8 @@ Si tienes varios cuadernos con la **misma huella**, la extensión detectará una
 *   **Chrome Storage Sync & Local:** utiliza la API de almacenamiento para mantener las etiquetas sincronizadas entre dispositivos y realizar caché local de seguridad.
 *   **Dynamic i18n:** implementa un sistema de localización propio que permite el cambio de idioma instantáneo sin necesidad de recargar la página.
 *   **MutationObserver:** se utiliza para detectar de forma eficiente y reactiva cuándo se añaden nuevos cuadernos a la lista o se producen cambios en la navegación.
-*   **Fragmentación de datos (chunking):** sistema avanzado para superar el límite de 8 KB de Chrome Sync mediante la división de datos en fragmentos.
+*   **Fragmentación de datos (chunking):** sistema para superar el límite de 8 KB por elemento de Chrome Sync dividiendo los datos en fragmentos medidos en bytes reales. Los fragmentos nuevos se escriben antes de borrar los sobrantes, de modo que un fallo de escritura nunca deja la nube vacía.
+*   **Rendimiento:** las lecturas y escrituras del DOM se agrupan y los cuadernos se analizan en una sola pasada, lo que mantiene la interfaz fluida incluso con cientos de cuadernos.
 *   **ID de extensión predefinido:** el `manifest.json` incluye una clave pública (`key`) para asegurar que el ID de la extensión sea idéntico en todas tus instalaciones manuales. Esto es indispensable para que Chrome Sync reconozca que se trata de la misma extensión y permita la sincronización. **Importante:** aunque el ID sea el mismo para todos los usuarios de este repositorio, tus datos están vinculados exclusivamente a tu cuenta de Google y nadie más puede acceder a ellos.
 *   **Permisos:**
     *   `storage`: para guardar y sincronizar tus etiquetas y preferencias.

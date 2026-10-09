@@ -23,6 +23,10 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 
 - 🏷️ **Color-Coded Tags:** Create custom tags with a vibrant color palette to categorize your projects visually.
 - 🔍 **Advanced Filtering:** Find notebooks instantly by combining text search and tag filters with **AND** or **OR** logic.
+- ✅ **Bulk Tagging:** Select several notebooks (click, Shift+click, or "Select visible") and add or remove tags on all of them at once, with undo.
+- ⭐ **Priority Tags:** Star the tags you always want to see first on every notebook.
+- 📐 **Space-Aware Tags:** Each notebook shows as many tags as fit, grouping the rest under "+N", in both grid and list views.
+- 🎛️ **Full Management Panel:** Create, rename, color, and delete tags while seeing how many notebooks use each one, with a quick filter, automatic text contrast, and full keyboard support.
 - 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in Gemini Notebook, fully respecting your visual preference.
 - 🔄 **Automatic Sync:** Your tags and preferences are automatically synced across all your devices via your Chrome account.
 - 💾 **Granular Backup:** Export and import your settings in JSON format, allowing you to choose which elements to restore.
@@ -33,13 +37,31 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 
 ---
 
+## 🧰 Advanced Organization
+
+### ✅ Bulk Tagging
+1. Click **Select** in the extension bar. A floating bar appears at the bottom.
+2. Pick notebooks: a **click** selects one, **Shift+click** selects a range, and **Select visible** adds every notebook shown by the current search and filters.
+3. Click **Tag**. Each tag shows whether all selected notebooks have it, some do (with a count), or none do: clicking it adds it to all of them or, if all of them already have it, removes it from all. You can also create a new tag and apply it to the selection.
+4. After each change, a notice with **Undo** appears for a few seconds. Closing the window after making changes ends selection mode; closing it without changes keeps the selection.
+
+**Esc** closes the window and, pressed again, exits selection mode.
+
+### ⭐ Priority Tags
+In the management panel, each tag's **star** marks it as a priority tag: it will be shown before the others on every notebook, so it is the last one to be hidden behind "+N". Among several priority tags, and among the rest, the **order in which they were assigned to each notebook** is kept.
+
+### 📐 Tags Shown on Each Notebook
+Each notebook shows as many tags as fit in its space and groups the rest under **"+N"**; click it to see them all. Hovering over a tag only shows the full list if some tags are hidden or its name is truncated. In grid view, tags take the last line of the card, aligned with the shared-notebook icon.
+
+---
+
 ## ⚠️ Important Note on List View
 
 Since Gemini Notebook does not expose internal unique identifiers in all its views, the extension uses a metadata-based "fingerprint" to identify each notebook.
 
 This fingerprint is built from the **notebook name and its number of sources**. Case, accents, spaces, and punctuation in the name are ignored, and only the **first 30 resulting characters** are taken into account. As a result, two notebooks can share a fingerprint even if their names are not identical, for example "Unit Plan: Introduction to Algebra – Part 1" and "Unit Plan: Introduction to Algebra – Part 2" if both have the same number of sources.
 
-If you have multiple notebooks with the **same fingerprint**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier.
+If you have multiple notebooks with the **same fingerprint**, the extension will detect a **collision** in the list view and block tagging for safety to avoid association errors. In these cases, a warning icon (⚠️) will appear, and you should use the **thumbnail view** (grid) to tag them, as that view allows for retrieving a real unique identifier. For the same reason, these notebooks cannot be selected in bulk tagging mode from the list view either.
 
 ---
 
@@ -50,7 +72,8 @@ If you have multiple notebooks with the **same fingerprint**, the extension will
 *   **Chrome Storage Sync & Local:** Uses the Storage API to keep tags synchronized between devices and perform local safety caching.
 *   **Dynamic i18n:** Implements a custom localization system that allows for instant language changes without a page refresh.
 *   **MutationObserver:** Used to efficiently and reactively detect when new notebooks are added to the list or when navigation occurs.
-*   **Data Fragmentation (Chunking):** Sophisticated system to overcome the 8KB limit of Chrome Sync storage by splitting data into chunks.
+*   **Data Fragmentation (Chunking):** Overcomes Chrome Sync's 8 KB per-item limit by splitting data into chunks measured in real bytes. New chunks are written before leftover ones are removed, so a failed write never leaves the cloud empty.
+*   **Performance:** DOM reads and writes are batched and notebooks are analyzed in a single pass, keeping the interface smooth even with hundreds of notebooks.
 *   **Predefined extension ID:** The `manifest.json` file includes a public key (`key`) to ensure the extension ID is identical across all manual installations. This is essential for Chrome Sync to recognize them as the same extension and allow synchronization. **Important:** Although the ID is the same for all users of this repository, your data is linked exclusively to your Google account, and no one else can access it.
 *   **Permissions:**
     *   `storage`: To save and sync your tags and preferences.

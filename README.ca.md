@@ -23,6 +23,10 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 
 - 🏷️ **Etiquetatge amb colors:** crea etiquetes personalitzades amb una paleta de colors vibrants per categoritzar els teus projectes visualment.
 - 🔍 **Filtratge avançat:** localitza quaderns a l'instant combinant cerca per text i filtres d'etiquetes amb lògica **I (AND)** o **O (OR)**.
+- ✅ **Etiquetatge múltiple:** selecciona diversos quaderns (clic, Maj+clic o «Selecciona els visibles») i afegeix o treu etiquetes a tots alhora, amb opció de desfer.
+- ⭐ **Etiquetes prioritàries:** marca amb una estrella les etiquetes que vols veure sempre primer a cada quadern.
+- 📐 **Etiquetes ajustades a l'espai:** cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en «+N», tant a la vista de quadrícula com a la de llista.
+- 🎛️ **Tauler de gestió complet:** crea, canvia el nom, acoloreix i elimina etiquetes veient quants quaderns té cadascuna, amb filtre ràpid, contrast automàtic del text i ús complet amb teclat.
 - 🌓 **Mode fosc automàtic:** la interfície s'adapta automàticament al tema (clar o fosc) que tinguis configurat a Gemini Notebook, respectant la teva preferència visual al 100%.
 - 🔄 **Sincronització automàtica:** les teves etiquetes i preferències es sincronitzen automàticament entre tots els teus dispositius mitjançant el teu compte de Chrome.
 - 💾 **Respatller granular:** exporta i importa la teva configuració en format JSON, permetent triar quins elements restaurar.
@@ -33,13 +37,31 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 
 ---
 
+## 🧰 Organització avançada
+
+### ✅ Etiquetatge múltiple
+1. Prem **Selecciona** a la barra de l'extensió. Apareix una barra flotant a la part inferior.
+2. Marca els quaderns: un **clic** en selecciona un, **Maj+clic** selecciona un interval i **Selecciona els visibles** hi afegeix tots els que mostren la cerca i els filtres actius.
+3. Prem **Etiqueta**. Cada etiqueta indica si la tenen tots els quaderns seleccionats, alguns (amb el recompte) o cap: en prémer-la s'afegeix a tots o, si ja la tenen tots, es treu de tots. També pots crear una etiqueta nova i aplicar-la a la selecció.
+4. Després de cada canvi apareix un avís amb **Desfés** durant uns segons. En tancar la finestra després d'algun canvi, el mode selecció s'acaba; si la tanques sense canvis, la selecció es conserva.
+
+**Esc** tanca la finestra i, prement-la de nou, surt del mode selecció.
+
+### ⭐ Etiquetes prioritàries
+Al tauler de gestió, l'**estrella** de cada etiqueta la marca com a prioritària: a tots els quaderns es mostrarà abans que les altres, de manera que serà l'última a quedar amagada darrere de «+N». Entre diverses prioritàries, i també entre la resta, es respecta l'**ordre en què es van assignar a cada quadern**.
+
+### 📐 Etiquetes visibles a cada quadern
+Cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en **«+N»**; en prémer-lo es veuen totes. En passar el punter per una etiqueta només apareix la vista amb totes si n'hi ha alguna d'amagada o si el seu nom està retallat. A la quadrícula, les etiquetes ocupen l'última línia de la targeta, alineades amb la icona de quadern compartit.
+
+---
+
 ## ⚠️ Nota important sobre la vista de llista
 
 Atès que Gemini Notebook no exposa identificadors únics interns en totes les seves vistes, l'extensió utilitza una "petjada digital" basada en metadades per identificar cada quadern. 
 
 Aquesta petjada s'obté a partir del **nom del quadern i el seu nombre de fonts**. Del nom s'ignoren majúscules, accents, espais i signes de puntuació, i només es tenen en compte els **primers 30 caràcters** resultants. Per això, dos quaderns poden compartir petjada encara que els seus noms no siguin idèntics, per exemple «Unitat didàctica de Matemàtiques – Tema 1» i «Unitat didàctica de Matemàtiques – Tema 2» si tots dos tenen el mateix nombre de fonts.
 
-Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una **col·lisió** a la vista de llista i bloquejarà l'etiquetatge per seguretat per evitar errors d'associació. En aquests casos, apareixerà una icona d'avís (⚠️) i hauràs d'utilitzar la **vista de miniatures** (quadrícula) per etiquetar-los, ja que en aquesta vista sí que és possible obtenir un identificador únic real.
+Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una **col·lisió** a la vista de llista i bloquejarà l'etiquetatge per seguretat per evitar errors d'associació. En aquests casos, apareixerà una icona d'avís (⚠️) i hauràs d'utilitzar la **vista de miniatures** (quadrícula) per etiquetar-los, ja que en aquesta vista sí que és possible obtenir un identificador únic real. Pel mateix motiu, aquests quaderns tampoc no es poden seleccionar en el mode d'etiquetatge múltiple des de la vista de llista.
 
 ---
 
@@ -50,7 +72,8 @@ Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una
 *   **Chrome Storage Sync & Local:** utilitza l'API d'emmagatzematge per mantenir les etiquetes sincronitzades entre dispositius i realitzar cachè local de seguretat.
 *   **Dynamic i18n:** implementa un sistema de localització propi que permet el canvi d'idioma instantani sense necessitat de recarregar la pàgina.
 *   **MutationObserver:** s'utilitza per detectar de forma eficient i reactiva quan s'afegeixen nous quaderns a la llista o es produeixen canvis en la navegació.
-*   **Fragmentació de dades (chunking):** sistema avançat per superar el límit de 8 KB de Chrome Sync mitjançant la divisió de dades en fragments.
+*   **Fragmentació de dades (chunking):** sistema per superar el límit de 8 KB per element de Chrome Sync dividint les dades en fragments mesurats en bytes reals. Els fragments nous s'escriuen abans d'esborrar els sobrants, de manera que un error d'escriptura mai no deixa el núvol buit.
+*   **Rendiment:** les lectures i escriptures del DOM s'agrupen i els quaderns s'analitzen en una sola passada, cosa que manté la interfície fluida fins i tot amb centenars de quaderns.
 *   **ID d'extensió predefinit:** el `manifest.json` inclou una clau pública (`key`) per assegurar que l'ID de l'extensió sigui idèntic en totes les instal·lacions manuals. Això és indispensable perquè Chrome Sync reconegui que es tracta de la mateixa extensió i permeti la sincronització. **Important:** tot i que l'ID sigui el mateix per a tots els usuaris d'aquest repositori, les teves dades estan vinculades exclusivament al teu compte de Google i ningú més pot accedir-hi.
 *   **Permisos:**
     *   `storage`: per guardar i sincronitzar les teves etiquetes i preferències.
