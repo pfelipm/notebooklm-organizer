@@ -88,5 +88,18 @@
   "color_purple": { "message": "Morado" },
   "color_teal": { "message": "Turquesa" },
   "color_grey": { "message": "Gris" },
-  "color_custom": { "message": "Color personalizado" }
+  "color_custom": { "message": "Color personalizado" },
+  "btn_select": { "message": "Seleccionar" },
+  "btn_select_cancel": { "message": "Cancelar selección" },
+  "selection_count_zero": { "message": "Ningún cuaderno seleccionado" },
+  "selection_count_one": { "message": "1 cuaderno seleccionado" },
+  "selection_count_other": { "message": "$1 cuadernos seleccionados" },
+  "selection_hint": { "message": "Clic para seleccionar · Mayús+clic para un rango · Esc para salir" },
+  "selection_checkbox_label": { "message": "Seleccionar cuaderno" },
+  "selection_collision_msg": { "message": "Este cuaderno no se puede seleccionar porque tiene la misma huella que otro (nombre y número de fuentes). Selecciónalo desde la vista de cuadrícula." },
+  "btn_select_visible": { "message": "Seleccionar visibles" },
+  "btn_deselect_all": { "message": "Deseleccionar todo" },
+  "btn_tag_selected": { "message": "Etiquetar" },
+  "btn_exit_selection": { "message": "Salir del modo selección" },
+  "popover_title_multi": { "message": "Etiquetar $1 cuadernos" }
 }

@@ -73,7 +73,7 @@ body.dark-theme {
   flex-wrap: nowrap;
   gap: 6px;
   margin-top: 0;
-  padding: 0 16px 12px;
+  padding: 0 0 12px; /* Sin relleno lateral: alineadas con el título de la tarjeta */
   height: 26px;
   align-items: center;
   position: relative;
@@ -87,7 +87,14 @@ body.dark-theme {
     height: auto;
     display: inline-flex;
     vertical-align: middle;
-    margin-left: 12px;
+    /* Alineadas con el texto del título: emoji de Google (20px) + su margen (16px) */
+    margin-left: 36px;
+}
+
+/* En modo selección la casilla (20px + 12px de margen) desplaza el título: las etiquetas la siguen */
+body.nblm-selecting .mat-mdc-cell .nblm-tag-container,
+body.nblm-selecting td .nblm-tag-container {
+    margin-left: 68px;
 }
 
 /* La celda de título de la vista de lista no tiene relleno vertical: con títulos de 2 líneas
@@ -430,6 +437,20 @@ body.dark-theme {
     display: block;
 }
 
+/* Estado parcial (algunos de los cuadernos seleccionados tienen la etiqueta) */
+.nblm-check-item.mixed .nblm-check-icon::after {
+    content: '–';
+    display: block;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.nblm-check-partial {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--nblm-secondary-text);
+}
+
 /* Botón de crear nueva */
 .nblm-create-option {
     padding: 12px 16px;
@@ -490,6 +511,8 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
 }
 
 .nblm-manage-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
   background: var(--nblm-bg-main);
   border: 1px solid var(--nblm-border);
   padding: 6px 16px;
@@ -1264,4 +1287,206 @@ body.dark-theme .nblm-dev-banner {
 
 body.dark-theme .nblm-dev-banner.danger {
   background: rgba(242, 139, 130, 0.12);
+}
+
+/* --- SELECCIÓN MÚLTIPLE --- */
+.nblm-select-btn[aria-pressed="true"] {
+  background: var(--nblm-primary);
+  color: var(--nblm-bg-main);
+  border-color: var(--nblm-primary);
+}
+
+.nblm-select-btn[aria-pressed="true"]:hover {
+  background: var(--nblm-primary);
+  filter: brightness(0.9);
+}
+
+.nblm-header-row .nblm-select-btn {
+  margin-right: 8px;
+}
+
+/* Barra flotante inferior del modo selección */
+.nblm-selection-floatbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 20px;
+  max-width: calc(100vw - 48px);
+  box-sizing: border-box;
+  background: var(--nblm-bg-main);
+  border: 1px solid var(--nblm-border);
+  border-radius: 28px;
+  box-shadow: var(--nblm-shadow-lg), var(--nblm-shadow-modal);
+  font-family: 'Roboto', sans-serif;
+  animation: nblm-floatbar-in 0.15s ease-out;
+}
+
+@keyframes nblm-floatbar-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.nblm-floatbar-info {
+  display: flex;
+  flex-direction: column;
+  margin-right: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nblm-selection-count {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--nblm-text);
+}
+
+.nblm-selection-hint {
+  font-size: 11px;
+  color: var(--nblm-secondary-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* En ventanas estrechas se recorta con "…" en vez de quedar bajo los botones */
+}
+
+.nblm-selection-hint[hidden] {
+  display: none;
+}
+
+.nblm-floatbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--nblm-border);
+  background: var(--nblm-bg-main);
+  color: var(--nblm-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.nblm-floatbar-btn:hover:not(:disabled) {
+  background: var(--nblm-bg-hover);
+  border-color: var(--nblm-primary);
+}
+
+.nblm-floatbar-btn.primary {
+  background: var(--nblm-primary);
+  border-color: var(--nblm-primary);
+  color: var(--nblm-bg-main);
+}
+
+.nblm-floatbar-btn.primary:hover:not(:disabled) {
+  background: var(--nblm-primary);
+  filter: brightness(0.9);
+}
+
+.nblm-floatbar-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.nblm-selection-floatbar :focus-visible {
+  outline: 2px solid var(--nblm-primary);
+  outline-offset: 2px;
+}
+
+/* Hueco al final de la lista para que la barra flotante no tape los últimos cuadernos */
+body.nblm-selecting .all-projects-container {
+  padding-bottom: 96px !important;
+}
+
+/* Casilla: oculta fuera del modo selección */
+.nblm-select-box {
+  display: none;
+}
+
+body.nblm-selecting .nblm-select-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2px solid var(--nblm-secondary-text);
+  border-radius: 4px;
+  background: var(--nblm-bg-main);
+  flex-shrink: 0;
+  z-index: 25;
+  pointer-events: none; /* El clic lo gestiona la tarjeta entera */
+}
+
+body.nblm-selecting .nblm-select-box[aria-checked="true"] {
+  background: var(--nblm-primary);
+  border-color: var(--nblm-primary);
+}
+
+body.nblm-selecting .nblm-select-box[aria-checked="true"]::after {
+  content: '✓';
+  color: var(--nblm-bg-main);
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+body.nblm-selecting .nblm-select-box.disabled {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+/* Cuadrícula: la casilla ocupa el lugar del menú ⋮ (sin función en modo selección), alineada con
+   el icono del cuaderno y lejos del borde redondeado (40px) de la tarjeta */
+body.nblm-selecting project-button mat-card {
+  position: relative;
+}
+
+body.nblm-selecting project-button .nblm-select-box {
+  position: absolute;
+  top: 37px;
+  right: 30px;
+}
+
+body.nblm-selecting project-button mat-card button[aria-haspopup="menu"] {
+  visibility: hidden;
+}
+
+/* Lista: en la fila del título, delante del emoji */
+body.nblm-selecting td .nblm-select-box,
+body.nblm-selecting .mat-mdc-cell .nblm-select-box {
+  display: inline-flex;
+  margin-right: 12px;
+}
+
+/* Cuadernos en modo selección: cursor de selección y resaltado de los marcados */
+body.nblm-selecting .nblm-processed {
+  cursor: pointer;
+}
+
+body.nblm-selecting .nblm-processed * {
+  cursor: pointer !important;
+}
+
+body.nblm-selecting project-button.nblm-selected mat-card {
+  outline: 3px solid var(--nblm-primary);
+  outline-offset: -3px;
+}
+
+body.nblm-selecting tr.nblm-selected,
+body.nblm-selecting [role="row"].nblm-selected {
+  background: var(--nblm-checked-bg) !important;
+}
+
+/* En modo selección las × de las etiquetas no actúan: se ocultan para no confundir, pero conservando
+   su hueco para que las etiquetas no cambien de ancho al entrar y salir del modo */
+body.nblm-selecting .nblm-processed .nblm-tag .remove-tag {
+  visibility: hidden;
 }

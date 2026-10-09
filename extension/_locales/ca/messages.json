@@ -88,5 +88,18 @@
   "color_purple": { "message": "Lila" },
   "color_teal": { "message": "Turquesa" },
   "color_grey": { "message": "Gris" },
-  "color_custom": { "message": "Color personalitzat" }
+  "color_custom": { "message": "Color personalitzat" },
+  "btn_select": { "message": "Selecciona" },
+  "btn_select_cancel": { "message": "Cancel·la la selecció" },
+  "selection_count_zero": { "message": "Cap quadern seleccionat" },
+  "selection_count_one": { "message": "1 quadern seleccionat" },
+  "selection_count_other": { "message": "$1 quaderns seleccionats" },
+  "selection_hint": { "message": "Clic per seleccionar · Maj+clic per a un interval · Esc per sortir" },
+  "selection_checkbox_label": { "message": "Selecciona el quadern" },
+  "selection_collision_msg": { "message": "Aquest quadern no es pot seleccionar perquè té la mateixa petjada que un altre (nom i nombre de fonts). Selecciona'l des de la vista de quadrícula." },
+  "btn_select_visible": { "message": "Selecciona els visibles" },
+  "btn_deselect_all": { "message": "Desselecciona-ho tot" },
+  "btn_tag_selected": { "message": "Etiqueta" },
+  "btn_exit_selection": { "message": "Surt del mode selecció" },
+  "popover_title_multi": { "message": "Etiqueta $1 quaderns" }
 }

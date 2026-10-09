@@ -88,5 +88,18 @@
   "color_purple": { "message": "Purple" },
   "color_teal": { "message": "Teal" },
   "color_grey": { "message": "Grey" },
-  "color_custom": { "message": "Custom color" }
+  "color_custom": { "message": "Custom color" },
+  "btn_select": { "message": "Select" },
+  "btn_select_cancel": { "message": "Cancel selection" },
+  "selection_count_zero": { "message": "No notebooks selected" },
+  "selection_count_one": { "message": "1 notebook selected" },
+  "selection_count_other": { "message": "$1 notebooks selected" },
+  "selection_hint": { "message": "Click to select · Shift+click for a range · Esc to exit" },
+  "selection_checkbox_label": { "message": "Select notebook" },
+  "selection_collision_msg": { "message": "This notebook cannot be selected because it has the same fingerprint as another one (name and number of sources). Select it from the grid view." },
+  "btn_select_visible": { "message": "Select visible" },
+  "btn_deselect_all": { "message": "Deselect all" },
+  "btn_tag_selected": { "message": "Tag" },
+  "btn_exit_selection": { "message": "Exit selection mode" },
+  "popover_title_multi": { "message": "Tag $1 notebooks" }
 }

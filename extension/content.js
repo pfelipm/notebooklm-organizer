@@ -171,6 +171,7 @@ const ICON_PATHS = {
     close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+    label: 'M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z',
     warning: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
     expand: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
     search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'
@@ -306,6 +307,17 @@ function processNewNodes() {
   // Fase de escritura
   toProcess.forEach(({ node, id, isCollision }) => {
     node.classList.add('nblm-processed');
+    node.dataset.nblmId = id;
+    // Casilla de selección: solo visible en modo selección
+    const box = document.createElement('span');
+    box.className = 'nblm-select-box';
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-checked', 'false');
+    box.setAttribute('aria-label', t('selection_checkbox_label'));
+    // Cuadrícula: dentro de la tarjeta (el CSS la coloca donde el menú ⋮). Lista: en la fila del título,
+    // delante del emoji, para que no ocupe una línea propia
+    const boxTarget = node.querySelector('mat-card') || node.querySelector('.project-table-title') || node.querySelector('.mat-column-title') || node;
+    boxTarget.prepend(box);
     if (isCollision) {
         const warnIcon = document.createElement('span');
         warnIcon.className = 'nblm-collision-warning';
@@ -324,6 +336,7 @@ function processNewNodes() {
   // Los cuadernos que aparecen después (al volver de un cuaderno, "Ver más"...) también deben
   // respetar los filtros y la búsqueda activos
   if (toProcess.length > 0 && (activeFilters.size > 0 || searchQuery)) applyFilters();
+  if (toProcess.length > 0) syncSelectionUI();
 }
 
 // 5. FUNCIONES DE INTERFAZ (UI)
@@ -407,14 +420,6 @@ function showCollisionAlert() {
     showAlertDialog('⚠️', t('alert_collision_title'), t('alert_collision_msg'));
 }
 
-function toggleTag(id, tag) {
-    hasInteracted = true;
-    if (!notebookTags[id]) notebookTags[id] = [];
-    notebookTags[id] = notebookTags[id].includes(tag) ? notebookTags[id].filter(t => t !== tag) : [...notebookTags[id], tag];
-    saveAllData();
-    updateUI();
-}
-
 function removeTagFromNotebook(id, tag) {
     hasInteracted = true;
     if (notebookTags[id]) {
@@ -433,9 +438,161 @@ function updateUI() {
     if (container) items.push({ container, id: getResolvedId(node, scan.isCollision(node)) });
   });
   // Fase de escritura
-  items.forEach(({ container, id }) => renderTags(container, id));
+  items.forEach(({ container, id }) => {
+      container.closest('.nblm-processed').dataset.nblmId = id;
+      renderTags(container, id);
+  });
   refreshTooltip();
   renderFilterTags(); applyFilters(scan);
+  syncSelectionUI();
+}
+
+// 4b. SELECCIÓN MÚLTIPLE
+// En modo selección, un clic en un cuaderno lo marca en lugar de abrirlo.
+let selectionMode = false;
+const selectedIds = new Set();
+let selectionAnchor = null; // Último cuaderno pulsado: origen de los rangos con Mayús+clic
+
+function isSelectable(node) {
+    const id = node.dataset.nblmId;
+    return !!id && !id.startsWith('collision:');
+}
+
+// Cuadernos que el usuario ve ahora mismo (excluye los ocultos por filtros y la vista previa de destacados)
+function getVisibleSelectableNodes() {
+    return [...document.querySelectorAll('.nblm-processed')]
+        .filter(node => isSelectable(node) && node.checkVisibility({ checkVisibilityCSS: true, checkOpacity: true }));
+}
+
+function setSelectionMode(on) {
+    selectionMode = on;
+    if (!on) { selectedIds.clear(); selectionAnchor = null; }
+    document.body.classList.toggle('nblm-selecting', on);
+    closeTooltip();
+    const btn = document.querySelector('.nblm-select-btn');
+    if (btn) {
+        btn.textContent = on ? t('btn_select_cancel') : t('btn_select');
+        btn.setAttribute('aria-pressed', String(on));
+    }
+    document.querySelector('.nblm-selection-floatbar')?.remove();
+    if (on) document.body.appendChild(createSelectionBar());
+    syncSelectionUI();
+}
+
+// Barra flotante inferior: siempre visible al desplazarse por listas largas y sin mover el contenido
+function createSelectionBar() {
+    const bar = document.createElement('div');
+    bar.className = 'nblm-selection-floatbar';
+    bar.setAttribute('role', 'toolbar');
+    bar.setAttribute('aria-label', t('btn_select'));
+    bar.innerHTML = `
+        <div class="nblm-floatbar-info">
+            <span class="nblm-selection-count" role="status"></span>
+            <span class="nblm-selection-hint">${t('selection_hint')}</span>
+        </div>
+        <button type="button" class="nblm-floatbar-btn nblm-select-visible"></button>
+        <button type="button" class="nblm-floatbar-btn primary nblm-tag-selected">${icon('label', 18)}<span>${t('btn_tag_selected')}</span></button>
+        <button type="button" class="nblm-btn-icon nblm-exit-selection" title="${t('btn_exit_selection')}" aria-label="${t('btn_exit_selection')}">${icon('close', 20)}</button>
+    `;
+    bar.querySelector('.nblm-select-visible').onclick = () => {
+        const visible = getVisibleSelectableNodes();
+        const allSelected = visible.length > 0 && visible.every(n => selectedIds.has(n.dataset.nblmId));
+        if (allSelected) selectedIds.clear();
+        else visible.forEach(n => selectedIds.add(n.dataset.nblmId));
+        selectionAnchor = null;
+        syncSelectionUI();
+    };
+    bar.querySelector('.nblm-tag-selected').onclick = () => { if (selectedIds.size > 0) showTagPopover([...selectedIds]); };
+    bar.querySelector('.nblm-exit-selection').onclick = () => setSelectionMode(false);
+    return bar;
+}
+
+function toggleNodeSelection(node) {
+    if (!isSelectable(node)) return;
+    const id = node.dataset.nblmId;
+    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+    selectionAnchor = node;
+    syncSelectionUI();
+}
+
+// Mayús+clic: marca todos los cuadernos visibles entre el último pulsado y el actual
+function selectRangeTo(node) {
+    const visible = getVisibleSelectableNodes();
+    const from = visible.indexOf(selectionAnchor);
+    const to = visible.indexOf(node);
+    if (from === -1 || to === -1) { toggleNodeSelection(node); return; }
+    const [start, end] = from < to ? [from, to] : [to, from];
+    visible.slice(start, end + 1).forEach(n => selectedIds.add(n.dataset.nblmId));
+    selectionAnchor = node;
+    syncSelectionUI();
+}
+
+// Refleja el estado de selección en casillas, tarjetas y barra (solo escrituras en el DOM)
+function syncSelectionUI() {
+    document.querySelectorAll('.nblm-processed').forEach(node => {
+        const selected = selectionMode && selectedIds.has(node.dataset.nblmId);
+        node.classList.toggle('nblm-selected', selected);
+        const box = node.querySelector('.nblm-select-box');
+        if (box) {
+            box.setAttribute('aria-checked', String(selected));
+            box.classList.toggle('disabled', !isSelectable(node));
+        }
+    });
+    const bar = document.querySelector('.nblm-selection-floatbar');
+    if (!bar) return;
+    const n = selectedIds.size;
+    bar.querySelector('.nblm-selection-count').textContent =
+        n === 0 ? t('selection_count_zero') : n === 1 ? t('selection_count_one') : t('selection_count_other', n);
+    bar.querySelector('.nblm-selection-hint').hidden = n > 0;
+    bar.querySelector('.nblm-tag-selected').disabled = n === 0;
+    const visible = getVisibleSelectableNodes();
+    const allSelected = visible.length > 0 && visible.every(node => selectedIds.has(node.dataset.nblmId));
+    const visibleBtn = bar.querySelector('.nblm-select-visible');
+    visibleBtn.textContent = allSelected ? t('btn_deselect_all') : t('btn_select_visible');
+    visibleBtn.disabled = visible.length === 0;
+}
+
+// Escucha en fase de captura sobre window: se ejecuta antes que los manejadores de Google,
+// así un clic en modo selección no abre el cuaderno ni su menú
+function handleSelectionClick(e) {
+    if (!selectionMode) return;
+    const node = e.target.closest?.('.nblm-processed');
+    if (!node) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (!isSelectable(node)) { showAlertDialog('⚠️', t('alert_collision_title'), t('selection_collision_msg')); return; }
+    if (e.shiftKey && selectionAnchor) selectRangeTo(node);
+    else toggleNodeSelection(node);
+}
+
+// Mayús+clic seleccionaría texto de la página: lo evitamos en modo selección
+function handleSelectionMouseDown(e) {
+    if (selectionMode && e.shiftKey && e.target.closest?.('.nblm-processed')) e.preventDefault();
+}
+
+function handleSelectionKeys(e) {
+    if (!selectionMode) return;
+    // Con un diálogo abierto, Escape y las teclas le pertenecen a él
+    if (document.querySelector('.nblm-modal-overlay')) return;
+    if (e.key === 'Escape') { e.stopImmediatePropagation(); setSelectionMode(false); return; }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const node = e.target.closest?.('.nblm-processed');
+    if (!node) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toggleNodeSelection(node);
+}
+
+// Añade o quita una etiqueta en varios cuadernos de una vez: un solo guardado y un solo redibujado
+function applyTagToNotebooks(ids, tag, add) {
+    hasInteracted = true;
+    ids.forEach(id => {
+        const current = notebookTags[id] || [];
+        if (add && !current.includes(tag)) notebookTags[id] = [...current, tag];
+        else if (!add && current.includes(tag)) notebookTags[id] = current.filter(t => t !== tag);
+    });
+    saveAllData();
+    updateUI();
 }
 
 function updateTabContext() {
@@ -448,6 +605,7 @@ function updateTabContext() {
     else document.body.classList.remove('nblm-in-featured-tab');
     const tools = document.querySelector('.nblm-tools-container');
     if (tools) tools.style.display = isFeatured ? 'none' : 'flex';
+    if (isFeatured && selectionMode) setSelectionMode(false);
 }
 
 function refreshInjectedTexts() {
@@ -455,8 +613,9 @@ function refreshInjectedTexts() {
     if (tools) {
         const searchInput = tools.querySelector('.nblm-search-input');
         if (searchInput) searchInput.placeholder = t('search_placeholder');
-        const manageBtn = tools.querySelector('.nblm-manage-btn');
+        const manageBtn = tools.querySelector('.nblm-manage-btn:not(.nblm-select-btn)');
         if (manageBtn) manageBtn.innerText = t('btn_manage_tags');
+        setSelectionMode(selectionMode); // Recrea la barra flotante con el idioma nuevo
     }
 }
 
@@ -474,6 +633,7 @@ function injectSearchTools() {
   // Dentro de un cuaderno no hay lista que organizar (y su selector de emojis es un <main>)
   if (location.pathname.includes('/notebook/')) {
       existing?.remove();
+      if (selectionMode) setSelectionMode(false);
       return;
   }
   if (existing) {
@@ -493,7 +653,8 @@ function injectSearchTools() {
   tools.innerHTML = `
     <div class="nblm-header-row">
         <input type="text" class="nblm-search-input" style="flex:1; margin-right:12px;" placeholder="${t('search_placeholder')}">
-        <button class="nblm-manage-btn">${t('btn_manage_tags')}</button>
+        <button type="button" class="nblm-manage-btn nblm-select-btn" aria-pressed="false">${t('btn_select')}</button>
+        <button type="button" class="nblm-manage-btn">${t('btn_manage_tags')}</button>
     </div>
     <div class="nblm-filter-tags" id="nblm-filter-tags"></div>
   `;
@@ -506,7 +667,8 @@ function injectSearchTools() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => applyFilters(), 150);
   };
-  tools.querySelector('.nblm-manage-btn').onclick = showManagementModal;
+  tools.querySelector('.nblm-select-btn').onclick = () => setSelectionMode(!selectionMode);
+  tools.querySelector('.nblm-manage-btn:not(.nblm-select-btn)').onclick = showManagementModal;
   const anchor = findToolsAnchor();
   if (anchor) anchor.before(tools);
   else if (featured) featured.insertAdjacentElement('afterend', tools);
@@ -515,6 +677,7 @@ function injectSearchTools() {
   if (document.querySelector('.nblm-tools-container')) {
       updateTabContext();
       renderFilterTags();
+      setSelectionMode(selectionMode); // Barra recreada: refleja el estado actual del modo selección
   }
 }
 
@@ -918,7 +1081,7 @@ function applyFilters(scan = scanNotebooks()) {
 }
 
 function showFullTagsTooltip(anchor, id, sticky) {
-    if (id?.startsWith('collision:')) return;
+    if (id?.startsWith('collision:') || selectionMode) return;
     closeTooltip();
     const tooltip = document.createElement('div');
     tooltip.className = 'nblm-tags-tooltip';
@@ -958,7 +1121,11 @@ function addGlobalTag(tag) {
     } 
 }
 
-function showTagPopover(id) {
+// Ventana de etiquetado para un cuaderno (id) o para varios (array de ids). Cada etiqueta muestra
+// tres estados: ninguno la tiene, algunos la tienen (▣) o todos la tienen. Pulsar una etiqueta que
+// ya tienen todos la quita de todos; en cualquier otro caso la añade a todos.
+function showTagPopover(target) {
+    const ids = Array.isArray(target) ? target : [target];
     closePopover();
     const overlay = document.createElement('div');
     overlay.className = 'nblm-modal-overlay';
@@ -969,7 +1136,7 @@ function showTagPopover(id) {
     pop.innerHTML = `
         <div class="nblm-popover-header">
              <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-                <span class="nblm-popover-title">${t('popover_title')}</span>
+                <span class="nblm-popover-title">${ids.length > 1 ? t('popover_title_multi', ids.length) : t('popover_title')}</span>
                 <span id="nblm-close" style="cursor:pointer;font-size:18px;">&times;</span>
              </div>
              <input type="text" id="nblm-in" placeholder="${t('popover_search_placeholder')}" autofocus style="width:100%; box-sizing:border-box;">
@@ -990,14 +1157,18 @@ function showTagPopover(id) {
             .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
             .forEach(t => {
                 const item = document.createElement('div');
-                const isChecked = (notebookTags[id] || []).includes(t);
-                item.className = `nblm-check-item ${isChecked ? 'checked' : ''}`;
+                const withTag = ids.filter(id => (notebookTags[id] || []).includes(t)).length;
+                const state = withTag === 0 ? 'none' : withTag === ids.length ? 'all' : 'some';
+                item.className = `nblm-check-item ${state === 'all' ? 'checked' : ''} ${state === 'some' ? 'mixed' : ''}`;
+                item.setAttribute('role', 'checkbox');
+                item.setAttribute('aria-checked', state === 'all' ? 'true' : state === 'some' ? 'mixed' : 'false');
                 const color = getTagColor(t);
                 item.innerHTML = `
-                    <div class="nblm-check-icon" style="border-color:${color}; background:${isChecked ? color : 'transparent'}"></div>
+                    <div class="nblm-check-icon" style="border-color:${color}; background:${state === 'none' ? 'transparent' : color}; color:${getContrastText(color)}"></div>
                     <span class="nblm-tag" style="background-color:${color}; color:${getContrastText(color)}; cursor:pointer; max-width:160px;">${escapeHTML(t)}</span>
+                    ${state === 'some' ? `<span class="nblm-check-partial">${withTag}/${ids.length}</span>` : ''}
                 `;
-                item.onclick = (e) => { e.stopPropagation(); toggleTag(id, t); render(); input.focus(); };
+                item.onclick = (e) => { e.stopPropagation(); applyTagToNotebooks(ids, t, state !== 'all'); render(); input.focus(); };
                 listContainer.appendChild(item);
             });
         const showCreate = q && !globalTags.some(t => t.toLowerCase() === q);
@@ -1005,7 +1176,7 @@ function showTagPopover(id) {
             const createOpt = document.createElement('div');
             createOpt.className = 'nblm-create-option';
             createOpt.innerHTML = `<span>${t('popover_create_tag')}</span> <span class="nblm-tag" style="background-color:#1a73e8; color:${getContrastText('#1a73e8')}; margin-left:4px;">${escapeHTML(input.value)}</span>`;
-            createOpt.onclick = () => { const newTag = input.value.trim(); addGlobalTag(newTag); toggleTag(id, newTag); input.value = ''; render(); };
+            createOpt.onclick = () => { const newTag = input.value.trim(); addGlobalTag(newTag); applyTagToNotebooks(ids, newTag, true); input.value = ''; render(); };
             pop.querySelector('#nblm-create').innerHTML = ''; pop.querySelector('#nblm-create').appendChild(createOpt);
         } else pop.querySelector('#nblm-create').innerHTML = '';
     };
@@ -1014,8 +1185,12 @@ function showTagPopover(id) {
         if (e.key === 'Enter') {
             const val = input.value.trim(); if (!val) return;
             const existing = globalTags.find(t => t.toLowerCase() === val.toLowerCase());
-            if (existing) { toggleTag(id, existing); input.value = ''; render(); }
-            else { addGlobalTag(val); toggleTag(id, val); input.value = ''; render(); }
+            if (existing) {
+                // Mismo criterio que al pulsar: si ya la tienen todos se quita, si no se añade a todos
+                const allHave = ids.every(id => (notebookTags[id] || []).includes(existing));
+                applyTagToNotebooks(ids, existing, !allHave);
+            } else { addGlobalTag(val); applyTagToNotebooks(ids, val, true); }
+            input.value = ''; render();
         }
     };
     overlay.appendChild(pop);
@@ -1040,6 +1215,9 @@ function init() {
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('click', handleSelectionClick, true);
+  window.addEventListener('keydown', handleSelectionKeys, true);
+  window.addEventListener('mousedown', handleSelectionMouseDown, true);
   document.addEventListener('mousedown', (e) => {
       const btn = e.target.closest('.project-button-more, button[aria-haspopup="menu"], button[aria-label*="Menú"]');
       if (btn) {
