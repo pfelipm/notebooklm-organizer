@@ -26,7 +26,7 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 - ✅ **Bulk Tagging:** Select several notebooks (click, Shift+click, or "Select visible") and add or remove tags on all of them at once, with undo.
 - ⭐ **Priority Tags:** Star the tags you always want to see first on every notebook.
 - 📐 **Space-Aware Tags:** Each notebook shows as many tags as fit, grouping the rest under "+N", in both grid and list views.
-- 🎛️ **Full Management Panel:** Create, rename, color, and delete tags while seeing how many notebooks use each one, with a quick filter, automatic text contrast, and full keyboard support.
+- 🎛️ **Full Management Panel:** Create, rename, color, and delete tags while seeing how many notebooks use each one, with a quick filter, automatic text contrast, a synced storage meter, and full keyboard support.
 - 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in Gemini Notebook, fully respecting your visual preference.
 - 🔄 **Automatic Sync:** Your tags and preferences are automatically synced across all your devices via your Chrome account.
 - 💾 **Granular Backup:** Export and import your settings in JSON format, allowing you to choose which elements to restore.
@@ -72,7 +72,7 @@ If you have multiple notebooks with the **same fingerprint**, the extension will
 *   **Chrome Storage Sync & Local:** Uses the Storage API to keep tags synchronized between devices and perform local safety caching.
 *   **Dynamic i18n:** Implements a custom localization system that allows for instant language changes without a page refresh.
 *   **MutationObserver:** Used to efficiently and reactively detect when new notebooks are added to the list or when navigation occurs.
-*   **Data Fragmentation (Chunking):** Overcomes Chrome Sync's 8 KB per-item limit by splitting data into chunks measured in real bytes. New chunks are written before leftover ones are removed, so a failed write never leaves the cloud empty.
+*   **Data Fragmentation (Chunking):** Overcomes Chrome Sync's 8 KB per-item limit by splitting data into chunks measured in real bytes. New chunks are written before leftover ones are removed, so a failed write never leaves the cloud empty. The management panel shows the space in use (Chrome allows about 100 KB per extension), the extension warns you at 80%, and any failed write is reported on screen. The internal table linking fingerprints to identifiers is stored only on the local device so it does not use up the quota.
 *   **Performance:** DOM reads and writes are batched and notebooks are analyzed in a single pass, keeping the interface smooth even with hundreds of notebooks.
 *   **Predefined extension ID:** The `manifest.json` file includes a public key (`key`) to ensure the extension ID is identical across all manual installations. This is essential for Chrome Sync to recognize them as the same extension and allow synchronization. **Important:** Although the ID is the same for all users of this repository, your data is linked exclusively to your Google account, and no one else can access it.
 *   **Permissions:**

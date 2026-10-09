@@ -108,5 +108,10 @@
   "undo_tag_removed_other": { "message": "Tag “$1” removed from $2 notebooks" },
   "undo_action": { "message": "Undo" },
   "modal_priority_on": { "message": "Priority tag: shown first on notebooks. Among several priority tags, the order in which they were assigned to each notebook is kept (click to remove)" },
-  "modal_priority_off": { "message": "Mark as priority: it will be shown first on notebooks. Among several priority tags, the order in which they were assigned to each notebook is kept" }
+  "modal_priority_off": { "message": "Mark as priority: it will be shown first on notebooks. Among several priority tags, the order in which they were assigned to each notebook is kept" },
+  "storage_meter_label": { "message": "Synced storage" },
+  "storage_meter_value": { "message": "$1 KB of $2 KB ($3%)" },
+  "storage_meter_help": { "message": "Chrome Sync space used by your tags and their assignment to notebooks. Chrome allows about 100 KB per extension; once full, changes stop syncing." },
+  "storage_warning": { "message": "Synced storage is at $1%. Once full, changes will stop syncing." },
+  "sync_error": { "message": "Your latest changes could not be synced (storage full or Chrome Sync error). Export a backup so you do not lose them." }
 }

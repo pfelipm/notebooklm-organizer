@@ -1605,3 +1605,49 @@ body.dark-theme .nblm-snackbar-action:hover {
 body.dark-theme .nblm-priority-btn[aria-pressed="true"] {
   color: #fdd663;
 }
+
+/* --- MEDIDOR DE ALMACENAMIENTO SINCRONIZADO (panel de gestión) --- */
+.nblm-storage-meter {
+  padding: 10px 24px 12px;
+  border-top: 1px solid var(--nblm-border);
+  font-size: 12px;
+  color: var(--nblm-secondary-text);
+  cursor: help;
+}
+
+.nblm-storage-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.nblm-storage-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nblm-storage-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--nblm-bg-tertiary);
+  overflow: hidden;
+}
+
+.nblm-storage-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: #188038;
+  transition: width 0.3s ease, background-color 0.3s;
+}
+
+.nblm-storage-meter.warning .nblm-storage-fill { background: #f9ab00; }
+.nblm-storage-meter.danger .nblm-storage-fill { background: #d93025; }
+.nblm-storage-meter.warning .nblm-storage-value { color: #b06000; font-weight: 500; }
+.nblm-storage-meter.danger .nblm-storage-value { color: var(--nblm-danger); font-weight: 500; }
+
+body.dark-theme .nblm-storage-fill { background: #81c995; }
+body.dark-theme .nblm-storage-meter.warning .nblm-storage-fill { background: #fdd663; }
+body.dark-theme .nblm-storage-meter.danger .nblm-storage-fill { background: #f28b82; }
+body.dark-theme .nblm-storage-meter.warning .nblm-storage-value { color: #fdd663; }

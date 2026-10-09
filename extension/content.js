@@ -110,12 +110,15 @@ function saveAllData() {
         }
 
         lastUpdated = Date.now();
-        const fullData = { notebookTags, globalTags, titleToIdMap, tagConfig, filterMode, uiLang, lastUpdated };
-        const jsonString = JSON.stringify(fullData);
-        
+        // titleToIdMap no viaja a la nube: hoy casi siempre hay ID real y solo ocupaba cuota
+        const syncData = { notebookTags, globalTags, tagConfig, filterMode, uiLang, lastUpdated };
+        const jsonString = JSON.stringify(syncData);
+
         // En Modo Dev, la caché local es nuestra red de seguridad ante desinstalaciones.
         if (IS_DEV_MODE) {
-            chrome.storage.local.set(fullData);
+            chrome.storage.local.set({ ...syncData, titleToIdMap: prunedTitleMap() });
+        } else {
+            saveTitleMapNow();
         }
 
         const chunkList = splitIntoSyncChunks(jsonString);
@@ -128,15 +131,75 @@ function saveAllData() {
         chrome.storage.sync.set(chunks, () => {
             if (chrome.runtime.lastError) {
                 console.error("Error crítico en Sync:", chrome.runtime.lastError.message);
+                notifySyncError();
                 return;
             }
             chrome.storage.sync.get(null, (allSyncData) => {
+                // Sobrantes: fragmentos de una versión de los datos más larga
                 const staleKeys = Object.keys(allSyncData).filter(k => /^_chunk_\d+$/.test(k) && !(k in chunks));
-                if (staleKeys.length > 0) chrome.storage.sync.remove(staleKeys);
+                if (staleKeys.length > 0) chrome.storage.sync.remove(staleKeys, () => refreshSyncUsage());
+                else refreshSyncUsage();
             });
         });
         saveTimeout = null;
     }, 1000);
+}
+
+// titleToIdMap (huella -> ID real) solo hace falta para cuadernos con etiquetas y se guarda en local
+function prunedTitleMap() {
+    return Object.fromEntries(Object.entries(titleToIdMap).filter(([, id]) => notebookTags[id]?.length > 0));
+}
+
+function saveTitleMapNow() {
+    chrome.storage.local.set({ titleToIdMap: prunedTitleMap() });
+}
+
+let titleMapTimer = null;
+function saveTitleMapSoon() {
+    clearTimeout(titleMapTimer);
+    titleMapTimer = setTimeout(saveTitleMapNow, 1000);
+}
+
+// --- CUOTA DE CHROME SYNC ---
+const SYNC_QUOTA = chrome.storage.sync.QUOTA_BYTES || 102400;
+let syncBytesInUse = null;
+let quotaWarned = false;
+let lastSyncErrorAt = 0;
+
+function formatKB(bytes) {
+    return (bytes / 1024).toLocaleString(uiLang === 'auto' ? undefined : uiLang, { maximumFractionDigits: 1 });
+}
+
+// Consulta el espacio usado, actualiza el medidor y avisa una vez por sesión al pasar del 80 %
+function refreshSyncUsage(warn = true) {
+    chrome.storage.sync.getBytesInUse(null, (bytes) => {
+        if (chrome.runtime.lastError) return;
+        syncBytesInUse = bytes;
+        updateStorageMeter();
+        const pct = bytes / SYNC_QUOTA;
+        if (warn && pct >= 0.8 && !quotaWarned) {
+            quotaWarned = true;
+            showSnackbar(t('storage_warning', Math.round(pct * 100)), { actionLabel: t('btn_manage_tags'), onAction: showManagementModal, duration: 10000 });
+        }
+    });
+}
+
+// Un fallo al guardar en la nube no puede pasar desapercibido (máximo un aviso cada 30 s)
+function notifySyncError() {
+    if (Date.now() - lastSyncErrorAt < 30000) return;
+    lastSyncErrorAt = Date.now();
+    showSnackbar(t('sync_error'), { actionLabel: t('btn_manage_tags'), onAction: showManagementModal, duration: 12000 });
+}
+
+function updateStorageMeter() {
+    const meter = document.querySelector('.nblm-storage-meter');
+    if (!meter || syncBytesInUse === null) return;
+    const pct = Math.min(100, Math.round(syncBytesInUse / SYNC_QUOTA * 100));
+    meter.classList.toggle('warning', pct >= 80 && pct < 95);
+    meter.classList.toggle('danger', pct >= 95);
+    meter.querySelector('.nblm-storage-value').textContent = t('storage_meter_value', formatKB(syncBytesInUse), formatKB(SYNC_QUOTA), pct);
+    meter.querySelector('.nblm-storage-fill').style.width = `${Math.max(pct, 1)}%`;
+    meter.querySelector('.nblm-storage-bar').setAttribute('aria-valuenow', String(pct));
 }
 
 function getTagColor(tagName) {
@@ -268,7 +331,8 @@ function getResolvedId(notebook, isCollision = false) {
     if (realId) {
         if (fp && titleToIdMap[fp] !== realId) {
             titleToIdMap[fp] = realId;
-            saveAllData();
+            // Solo se guarda (en local) si el cuaderno tiene etiquetas; ya no dispara una sincronización
+            if (notebookTags[realId]?.length > 0) saveTitleMapSoon();
         }
         if (fp && notebookTags[`fp:${fp}`]) {
             const existing = notebookTags[realId] || [];
@@ -640,9 +704,13 @@ function applyTagToNotebooks(ids, tag, add) {
     return previous.size;
 }
 
-// Aviso inferior con acción de deshacer. Solo hay uno a la vez: un cambio nuevo sustituye al anterior.
+// Aviso inferior con una acción opcional. Solo hay uno a la vez: uno nuevo sustituye al anterior.
 let undoSnackbarTimer = null;
 function showUndoSnackbar(message, onUndo) {
+    showSnackbar(message, { actionLabel: t('undo_action'), onAction: onUndo });
+}
+
+function showSnackbar(message, { actionLabel, onAction, duration = 6000 } = {}) {
     document.querySelector('.nblm-snackbar')?.remove();
     clearTimeout(undoSnackbarTimer);
     const bar = document.createElement('div');
@@ -651,15 +719,17 @@ function showUndoSnackbar(message, onUndo) {
     bar.setAttribute('aria-live', 'polite');
     const text = document.createElement('span');
     text.textContent = message; // textContent: el nombre de la etiqueta no se interpreta como HTML
-    const undoBtn = document.createElement('button');
-    undoBtn.type = 'button';
-    undoBtn.className = 'nblm-snackbar-action';
-    undoBtn.textContent = t('undo_action');
-    bar.append(text, undoBtn);
-
+    bar.append(text);
     const close = () => { clearTimeout(undoSnackbarTimer); bar.remove(); };
-    const startTimer = () => { clearTimeout(undoSnackbarTimer); undoSnackbarTimer = setTimeout(close, 6000); };
-    undoBtn.onclick = () => { close(); onUndo(); };
+    const startTimer = () => { clearTimeout(undoSnackbarTimer); undoSnackbarTimer = setTimeout(close, duration); };
+    if (actionLabel && onAction) {
+        const actionBtn = document.createElement('button');
+        actionBtn.type = 'button';
+        actionBtn.className = 'nblm-snackbar-action';
+        actionBtn.textContent = actionLabel;
+        actionBtn.onclick = () => { close(); onAction(); };
+        bar.append(actionBtn);
+    }
     // Se pausa mientras el puntero o el foco están en el aviso
     bar.onmouseenter = () => clearTimeout(undoSnackbarTimer);
     bar.onmouseleave = startTimer;
@@ -940,6 +1010,16 @@ function showManagementModal() {
                 <div class="nblm-manage-list"></div>
             </div>
 
+            <div class="nblm-storage-meter" title="${t('storage_meter_help')}">
+                <div class="nblm-storage-head">
+                    <span>${t('storage_meter_label')}</span>
+                    <span class="nblm-storage-value">…</span>
+                </div>
+                <div class="nblm-storage-bar" role="meter" aria-label="${t('storage_meter_label')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div class="nblm-storage-fill"></div>
+                </div>
+            </div>
+
             ${IS_DEV_MODE ? `
                 <details class="nblm-advanced ${syncMode === 'off' ? 'danger' : ''}" ${syncMode === 'off' ? 'open' : ''}>
                     <summary title="${t('modal_advanced')}">
@@ -1044,6 +1124,8 @@ function showManagementModal() {
     document.body.appendChild(overlay);
     renderCreatePalette();
     renderList();
+    updateStorageMeter();
+    refreshSyncUsage(false); // Cifra al día al abrir el panel
     createInput.focus();
 }
 
@@ -1377,6 +1459,7 @@ function init() {
     if (activeTooltip && !activeTooltip.contains(e.target) && !e.target.closest('.nblm-tag-container')) closeTooltip();
   });
   processNewNodes(); injectSearchTools();
+  refreshSyncUsage();
   setInterval(processNewNodes, 3000); setInterval(injectSearchTools, 5000);
 }
 
@@ -1472,7 +1555,8 @@ async function start() {
     const applyData = (data, source) => {
         notebookTags = data.notebookTags || {};
         globalTags = data.globalTags || [];
-        titleToIdMap = data.titleToIdMap || {};
+        // El mapa local prevalece; el de la nube (versiones anteriores) se aprovecha una última vez
+        titleToIdMap = { ...(data.titleToIdMap || {}), ...(localRes.titleToIdMap || {}) };
         tagConfig = data.tagConfig || {};
         filterMode = data.filterMode || 'AND';
         uiLang = data.uiLang || 'auto';

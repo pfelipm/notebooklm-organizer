@@ -108,5 +108,10 @@
   "undo_tag_removed_other": { "message": "Etiqueta «$1» quitada de $2 cuadernos" },
   "undo_action": { "message": "Deshacer" },
   "modal_priority_on": { "message": "Prioritaria: se muestra primero en los cuadernos. Entre varias prioritarias, se respeta el orden en que se asignaron a cada cuaderno (clic para quitar)" },
-  "modal_priority_off": { "message": "Marcar como prioritaria: se mostrará primero en los cuadernos. Entre varias prioritarias, se respeta el orden en que se asignaron a cada cuaderno" }
+  "modal_priority_off": { "message": "Marcar como prioritaria: se mostrará primero en los cuadernos. Entre varias prioritarias, se respeta el orden en que se asignaron a cada cuaderno" },
+  "storage_meter_label": { "message": "Almacenamiento sincronizado" },
+  "storage_meter_value": { "message": "$1 KB de $2 KB ($3 %)" },
+  "storage_meter_help": { "message": "Espacio de Chrome Sync que ocupan tus etiquetas y su asignación a los cuadernos. Chrome permite unos 100 KB por extensión; si se llena, los cambios dejan de sincronizarse." },
+  "storage_warning": { "message": "El almacenamiento sincronizado está al $1 %. Si se llena, los cambios dejarán de sincronizarse." },
+  "sync_error": { "message": "No se han podido sincronizar los últimos cambios (almacenamiento lleno o error de Chrome Sync). Exporta una copia de seguridad para no perderlos." }
 }

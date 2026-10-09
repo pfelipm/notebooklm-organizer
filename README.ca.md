@@ -26,7 +26,7 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 - ✅ **Etiquetatge múltiple:** selecciona diversos quaderns (clic, Maj+clic o «Selecciona els visibles») i afegeix o treu etiquetes a tots alhora, amb opció de desfer.
 - ⭐ **Etiquetes prioritàries:** marca amb una estrella les etiquetes que vols veure sempre primer a cada quadern.
 - 📐 **Etiquetes ajustades a l'espai:** cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en «+N», tant a la vista de quadrícula com a la de llista.
-- 🎛️ **Tauler de gestió complet:** crea, canvia el nom, acoloreix i elimina etiquetes veient quants quaderns té cadascuna, amb filtre ràpid, contrast automàtic del text i ús complet amb teclat.
+- 🎛️ **Tauler de gestió complet:** crea, canvia el nom, acoloreix i elimina etiquetes veient quants quaderns té cadascuna, amb filtre ràpid, contrast automàtic del text, mesurador de l'emmagatzematge sincronitzat i ús complet amb teclat.
 - 🌓 **Mode fosc automàtic:** la interfície s'adapta automàticament al tema (clar o fosc) que tinguis configurat a Gemini Notebook, respectant la teva preferència visual al 100%.
 - 🔄 **Sincronització automàtica:** les teves etiquetes i preferències es sincronitzen automàticament entre tots els teus dispositius mitjançant el teu compte de Chrome.
 - 💾 **Respatller granular:** exporta i importa la teva configuració en format JSON, permetent triar quins elements restaurar.
@@ -72,7 +72,7 @@ Si tens diversos quaderns amb la **mateixa petjada**, l'extensió detectarà una
 *   **Chrome Storage Sync & Local:** utilitza l'API d'emmagatzematge per mantenir les etiquetes sincronitzades entre dispositius i realitzar cachè local de seguretat.
 *   **Dynamic i18n:** implementa un sistema de localització propi que permet el canvi d'idioma instantani sense necessitat de recarregar la pàgina.
 *   **MutationObserver:** s'utilitza per detectar de forma eficient i reactiva quan s'afegeixen nous quaderns a la llista o es produeixen canvis en la navegació.
-*   **Fragmentació de dades (chunking):** sistema per superar el límit de 8 KB per element de Chrome Sync dividint les dades en fragments mesurats en bytes reals. Els fragments nous s'escriuen abans d'esborrar els sobrants, de manera que un error d'escriptura mai no deixa el núvol buit.
+*   **Fragmentació de dades (chunking):** sistema per superar el límit de 8 KB per element de Chrome Sync dividint les dades en fragments mesurats en bytes reals. Els fragments nous s'escriuen abans d'esborrar els sobrants, de manera que un error d'escriptura mai no deixa el núvol buit. El tauler de gestió mostra l'espai utilitzat (Chrome permet uns 100 KB per extensió), l'extensió avisa en arribar al 80 % i, si una escriptura falla, ho indica a la pantalla. La taula interna que relaciona petjades i identificadors es desa només a l'equip local per no consumir quota.
 *   **Rendiment:** les lectures i escriptures del DOM s'agrupen i els quaderns s'analitzen en una sola passada, cosa que manté la interfície fluida fins i tot amb centenars de quaderns.
 *   **ID d'extensió predefinit:** el `manifest.json` inclou una clau pública (`key`) per assegurar que l'ID de l'extensió sigui idèntic en totes les instal·lacions manuals. Això és indispensable perquè Chrome Sync reconegui que es tracta de la mateixa extensió i permeti la sincronització. **Important:** tot i que l'ID sigui el mateix per a tots els usuaris d'aquest repositori, les teves dades estan vinculades exclusivament al teu compte de Google i ningú més pot accedir-hi.
 *   **Permisos:**

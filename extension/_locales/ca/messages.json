@@ -108,5 +108,10 @@
   "undo_tag_removed_other": { "message": "Etiqueta «$1» treta de $2 quaderns" },
   "undo_action": { "message": "Desfés" },
   "modal_priority_on": { "message": "Prioritària: es mostra primer als quaderns. Entre diverses prioritàries, es respecta l'ordre en què es van assignar a cada quadern (clic per treure-la)" },
-  "modal_priority_off": { "message": "Marca-la com a prioritària: es mostrarà primer als quaderns. Entre diverses prioritàries, es respecta l'ordre en què es van assignar a cada quadern" }
+  "modal_priority_off": { "message": "Marca-la com a prioritària: es mostrarà primer als quaderns. Entre diverses prioritàries, es respecta l'ordre en què es van assignar a cada quadern" },
+  "storage_meter_label": { "message": "Emmagatzematge sincronitzat" },
+  "storage_meter_value": { "message": "$1 KB de $2 KB ($3 %)" },
+  "storage_meter_help": { "message": "Espai de Chrome Sync que ocupen les teves etiquetes i la seva assignació als quaderns. Chrome permet uns 100 KB per extensió; si s'omple, els canvis deixen de sincronitzar-se." },
+  "storage_warning": { "message": "L'emmagatzematge sincronitzat està al $1 %. Si s'omple, els canvis deixaran de sincronitzar-se." },
+  "sync_error": { "message": "No s'han pogut sincronitzar els darrers canvis (emmagatzematge ple o error de Chrome Sync). Exporta una còpia de seguretat per no perdre'ls." }
 }
