@@ -640,6 +640,12 @@ body:not(.nblm-in-featured-tab) .all-projects-container .featured-projects-conta
   text-decoration: none;
 }
 
+/* Versión instalada (leída del manifiesto) y marca "dev" en instalaciones manuales */
+.nblm-version {
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 .nblm-modal-footer a:hover {
   text-decoration: underline;
 }

@@ -594,7 +594,7 @@ function createSelectionBar() {
         selectionAnchor = null;
         syncSelectionUI();
     };
-    bar.querySelector('.nblm-tag-selected').onclick = () => { if (selectedIds.size > 0) showTagPopover([...selectedIds]); };
+    bar.querySelector('.nblm-tag-selected').onclick = () => { if (selectedIds.size > 0) showTagPopover([...selectedIds], { fromSelection: true }); };
     bar.querySelector('.nblm-exit-selection').onclick = () => setSelectionMode(false);
     return bar;
 }
@@ -678,7 +678,7 @@ function handleSelectionKeys(e) {
 // Añade o quita una etiqueta en varios cuadernos de una vez: un solo guardado y un solo redibujado
 // En cambios sobre varios cuadernos guarda una copia previa y ofrece deshacer.
 // Devuelve cuántos cuadernos han cambiado realmente.
-function applyTagToNotebooks(ids, tag, add) {
+function applyTagToNotebooks(ids, tag, add, { offerUndo = ids.length > 1 } = {}) {
     hasInteracted = true;
     const previous = new Map(); // id -> etiquetas antes del cambio (undefined si no tenía entrada)
     ids.forEach(id => {
@@ -690,7 +690,7 @@ function applyTagToNotebooks(ids, tag, add) {
     });
     saveAllData();
     updateUI();
-    if (ids.length > 1 && previous.size > 0) {
+    if (offerUndo && previous.size > 0) {
         const n = previous.size;
         const key = (add ? 'undo_tag_added' : 'undo_tag_removed') + (n === 1 ? '_one' : '_other');
         showUndoSnackbar(t(key, tag, n), () => {
@@ -1058,6 +1058,7 @@ function showManagementModal() {
 
             <div class="nblm-modal-footer">
                 ${t('attribution_created_by')} <a href="https://www.linkedin.com/in/pfelipm/" target="_blank">Pablo Felip</a> | <a href="https://github.com/pfelipm/notebooklm-organizer" target="_blank">GitHub</a>
+                <span class="nblm-version">· v${escapeHTML(chrome.runtime.getManifest().version)}${IS_DEV_MODE ? ' (dev)' : ''}</span>
             </div>
         </div>
     `;
@@ -1359,7 +1360,7 @@ function addGlobalTag(tag) {
 // Ventana de etiquetado para un cuaderno (id) o para varios (array de ids). Cada etiqueta muestra
 // tres estados: ninguno la tiene, algunos la tienen (▣) o todos la tienen. Pulsar una etiqueta que
 // ya tienen todos la quita de todos; en cualquier otro caso la añade a todos.
-function showTagPopover(target) {
+function showTagPopover(target, { fromSelection = false } = {}) {
     const ids = Array.isArray(target) ? target : [target];
     closePopover();
     const overlay = document.createElement('div');
@@ -1380,12 +1381,15 @@ function showTagPopover(target) {
         <div id="nblm-create"></div>
     `;
     let changed = false;
-    const apply = (tag, add) => { if (applyTagToNotebooks(ids, tag, add) > 0) changed = true; };
-    // Tras etiquetar una selección, el flujo habitual ha terminado: salimos del modo selección (el aviso
-    // de deshacer sigue disponible). Si se cierra sin cambios, la selección se conserva.
+    const apply = (tag, add) => {
+        if (applyTagToNotebooks(ids, tag, add, { offerUndo: fromSelection || ids.length > 1 }) > 0) changed = true;
+    };
+    // Tras etiquetar una selección (aunque sea de un solo cuaderno), el flujo habitual ha terminado:
+    // salimos del modo selección (el aviso de deshacer sigue disponible). Si se cierra sin cambios, la
+    // selección se conserva. La ventana abierta desde el menú ⋮ de un cuaderno no toca el modo selección.
     const close = () => {
         overlay.remove(); currentPopover = null;
-        if (changed && ids.length > 1 && selectionMode) setSelectionMode(false);
+        if (changed && fromSelection && selectionMode) setSelectionMode(false);
     };
     closeOnEscape(overlay, close);
     pop.querySelector('#nblm-close').onclick = close;
