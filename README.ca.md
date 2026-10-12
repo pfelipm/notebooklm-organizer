@@ -13,16 +13,16 @@
 La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer ha estat dissenyada sota el principi de **mínim accés necessari**:
 
 - **Sense accés al contingut:** l'extensió **en cap moment** llegeix, accedeix ni processa el contingut del text, documents o fonts que guardes dins dels teus quaderns.
-- **Només metadades organitzatives:** únicament llegeix el text visible de la targeta de cada quadern a la llista, com el **nom del quadern, el nombre de fonts i la data**. Aquestes dades s'utilitzen exclusivament per identificar el quadern, associar-li les teves etiquetes i permetre la cerca.
+- **Només metadades organitzatives:** de cada quadern de la llista únicament llegeix el seu **nom, el seu nombre de fonts i l'identificador intern del seu enllaç**. Aquestes dades s'utilitzen exclusivament per identificar el quadern i associar-li les teves etiquetes; la cerca només fa servir el nom del quadern i les seves etiquetes.
 - **Sense manipulació de dades:** l'extensió no modifica ni manipula els teus quaderns de cap forma. Només afegeix una capa visual d'organització sobre la interfície existent de Google.
-- **Les teves dades són teves:** tota la configuració s'emmagatzema al teu compte de Google (via Chrome Sync) i només tu hi tens accés.
+- **Les teves dades són teves:** les teves etiquetes i preferències s'emmagatzemen al teu compte de Google (via Chrome Sync) i només tu hi tens accés.
 
 ---
 
 ## ✨ Característiques destacades
 
 - 🏷️ **Etiquetatge amb colors:** crea etiquetes personalitzades amb una paleta de colors vibrants per categoritzar els teus projectes visualment.
-- 🔍 **Filtratge avançat:** localitza quaderns a l'instant combinant cerca per text i filtres d'etiquetes amb lògica **I (AND)** o **O (OR)**.
+- 🔍 **Cerca i filtratge avançat:** localitza quaderns a l'instant cercant en els seus títols i etiquetes (sense distingir majúscules ni accents) i combinant-ho amb filtres d'etiquetes amb lògica **I (AND)** o **O (OR)**.
 - ✅ **Etiquetatge múltiple:** selecciona diversos quaderns (clic, Maj+clic o «Selecciona els visibles») i afegeix o treu etiquetes a tots alhora, amb opció de desfer.
 - ⭐ **Etiquetes prioritàries:** marca amb una estrella les etiquetes que vols veure sempre primer a cada quadern.
 - 📐 **Etiquetes ajustades a l'espai:** cada quadern mostra tantes etiquetes com hi caben i agrupa la resta en «+N», tant a la vista de quadrícula com a la de llista.
@@ -31,14 +31,21 @@ La privadesa és el pilar fonamental d'aquesta extensió. NotebookLM Organizer h
 - 🌓 **Mode fosc automàtic:** la interfície s'adapta automàticament al tema (clar o fosc) que tinguis configurat a Gemini Notebook, respectant la teva preferència visual al 100%.
 - 🔄 **Sincronització automàtica:** les teves etiquetes i preferències es sincronitzen automàticament entre tots els teus dispositius mitjançant el teu compte de Chrome.
 - 💾 **Respatller granular:** exporta i importa la teva configuració en format JSON, permetent triar quins elements restaurar.
-- 🌐 **Suport multi-idioma:** interfície localitzada íntegrament en **espanyol, anglès i català**, amb canvi d'idioma instantani des de la interfície.
-- 💡 **Gestió de destacats:** per neteja i conveniència, l'extensió oculta la vista prèvia limitada de quaderns destacats a la pestanya principal "Tots" i s'inhibeix automàticament a la pestanya de "Destacats".
+- 🌐 **Suport multi-idioma:** interfície localitzada íntegrament en **espanyol, anglès i català**, amb canvi d'idioma instantani des del tauler de gestió d'etiquetes.
+- 💡 **Gestió de destacats:** per neteja, l'extensió oculta la vista prèvia de «Quaderns destacats» que Google mostra a la pestanya principal «Tots». A la pestanya «Descobreix» (abans «Destacats»), dedicada als quaderns públics, aquest contingut es manté i el que s'oculta és la barra de l'extensió (cerca, filtres i selecció). La pestanya es reconeix per l'estructura de la pàgina, no pel seu nom, de manera que el canvi de nom o d'idioma no l'afecta.
 - 🚀 **Accés ràpid:** fes clic a la icona de l'extensió des de qualsevol pàgina per obrir Gemini Notebook en una pestanya nova a l'instant.
 - ⚡ **Interfície nativa:** dissenyada per oferir una experiència d'ús amb funcions ampliades que se sentin com natives de Gemini Notebook, sense trencar el teu flux de treball.
 
 ---
 
 ## 🧰 Organització avançada
+
+### 🔍 Cerca i filtres
+- El quadre **Cerca quaderns o etiquetes** cerca en el **títol de cada quadern i en totes les seves etiquetes**, incloses les que queden amagades darrere de «+N».
+- No distingeix majúscules ni accents i troba també parts de paraules («tic» troba «Matemàtiques»).
+- Amb diverses paraules, cadascuna es cerca per separat i han d'aparèixer totes, en qualsevol ordre («2026 projecte» troba «Projecte final 2026»).
+- **Esc** o el botó ✕ del quadre buiden la cerca.
+- Les **pastilles d'etiqueta** situades sota el quadre filtren per etiqueta. Amb diverses d'actives, **I** mostra els quaderns que les tenen totes i **O**, els que en tenen alguna. La cerca i els filtres es poden combinar.
 
 ### ✅ Etiquetatge múltiple
 1. Prem **Selecciona** a la barra de l'extensió. Apareix una barra flotant a la part inferior.
@@ -108,7 +115,7 @@ NotebookLM Organizer integra un motor de sincronització adaptatiu que detecta a
 Atès que Google Chrome pot eliminar les dades de sincronització en desinstal·lar una extensió carregada manualment (Mode Dev), s'ha implementat un sistema de **redundància dual** i un **assistent de resolució de conflictes**.
 
 ### 🛠️ Modes de seguretat en desenvolupament (instal·lació manual)
-Mentre l'extensió s'utilitzi en mode de desenvolupament, disposaràs de tres nivells de protecció configurables des de la secció **Avançat** (desplegable) del modal de gestió d'etiquetes:
+Mentre l'extensió s'utilitzi en mode de desenvolupament, disposaràs de tres nivells de protecció configurables des de la secció desplegable **«Mode de desenvolupament actiu»** del tauler de gestió d'etiquetes:
 
 <p align="center">
   <img src="assets/modos-sync-dev-ca.png" alt="Modes de sincronització">

@@ -19,7 +19,7 @@
   "alert_collision_title": { "message": "Acció bloquejada por seguretat" },
   "alert_collision_msg": { "message": "Hi ha diversos quaderns con nom, fonts i data idèntics en aquesta llista.<br><br>Per evitar errors, canvia el nom d'un dels quaderns o utilitza la <b>vista de miniatures</b> per etiquetar-los." },
   "alert_understood": { "message": "Entès" },
-  "search_placeholder": { "message": "Cercar quaderns..." },
+  "search_placeholder": { "message": "Cerca quaderns o etiquetes..." },
   "btn_manage_tags": { "message": "Gestionar etiquetes" },
   "filter_mode_and": { "message": "I" },
   "filter_mode_or": { "message": "O" },

@@ -13,16 +13,16 @@
 La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer ha sido diseñada bajo el principio de **mínimo acceso necesario**:
 
 - **Sin acceso al contenido:** la extensión **en ningún momento** lee, accede ni procesa el contenido del texto, documentos o fuentes que guardas dentro de tus cuadernos.
-- **Solo metadatos organizativos:** únicamente lee el texto visible de la tarjeta de cada cuaderno en la lista, como el **nombre del cuaderno, el número de fuentes y la fecha**. Estos datos se utilizan exclusivamente para identificar el cuaderno, asociarle tus etiquetas y permitir la búsqueda.
+- **Solo metadatos organizativos:** de cada cuaderno de la lista únicamente lee su **nombre, su número de fuentes y el identificador interno de su enlace**. Estos datos se utilizan exclusivamente para identificar el cuaderno y asociarle tus etiquetas; la búsqueda solo usa el nombre del cuaderno y sus etiquetas.
 - **Sin manipulación de datos:** la extensión no modifica ni manipula tus cuadernos de ninguna forma. Solo añade una capa visual de organización sobre la interfaz existente de Google.
-- **Tus datos son tuyos:** toda la configuración se almacena en tu cuenta de Google (vía Chrome Sync) y solo tú tienes acceso a ella.
+- **Tus datos son tuyos:** tus etiquetas y preferencias se almacenan en tu cuenta de Google (vía Chrome Sync) y solo tú tienes acceso a ellas.
 
 ---
 
 ## ✨ Características destacadas
 
 - 🏷️ **Etiquetado con colores:** crea etiquetas personalizadas con una paleta de colores vibrantes para categorizar tus proyectos visualmente.
-- 🔍 **Filtrado avanzado:** localiza cuadernos al instante combinando búsqueda por texto y filtros de etiquetas con lógica **Y (AND)** u **O (OR)**.
+- 🔍 **Búsqueda y filtrado avanzado:** localiza cuadernos al instante buscando en sus títulos y etiquetas (sin distinguir mayúsculas ni acentos) y combinándolo con filtros de etiquetas con lógica **Y (AND)** u **O (OR)**.
 - ✅ **Etiquetado múltiple:** selecciona varios cuadernos (clic, Mayús+clic o «Seleccionar visibles») y aplica o quita etiquetas a todos de una vez, con opción de deshacer.
 - ⭐ **Etiquetas prioritarias:** marca con una estrella las etiquetas que quieres ver siempre primero en cada cuaderno.
 - 📐 **Etiquetas ajustadas al espacio:** cada cuaderno muestra tantas etiquetas como caben, agrupando el resto en «+N», tanto en la vista de cuadrícula como en la de lista.
@@ -31,14 +31,21 @@ La privacidad es el pilar fundamental de esta extensión. NotebookLM Organizer h
 - 🌓 **Modo oscuro automático:** la interfaz se adapta automáticamente al tema (claro u oscuro) que tengas configurado en Gemini Notebook, respetando tu preferencia visual al 100%.
 - 🔄 **Sincronización automática:** tus etiquetas y preferencias se sincronizan automáticamente entre todos tus dispositivos mediante tu cuenta de Chrome.
 - 💾 **Respaldo granular:** exporta e importa tu configuración en formato JSON, permitiendo elegir qué elementos restaurar.
-- 🌐 **Soporte multi-idioma:** interfaz localizada íntegramente en **español, inglés y català**, con cambio de idioma instantáneo desde la interfaz.
-- 💡 **Gestión de destacados:** por limpieza y conveniencia, la extensión oculta la vista previa limitada de cuadernos destacados en la pestaña principal "Todos" y se inhibe automáticamente en la pestaña de "Destacados".
+- 🌐 **Soporte multi-idioma:** interfaz localizada íntegramente en **español, inglés y català**, con cambio de idioma instantáneo desde el panel de gestión de etiquetas.
+- 💡 **Gestión de destacados:** por limpieza, la extensión oculta la vista previa de «Cuadernos destacados» que Google muestra en la pestaña principal «Todos». En la pestaña «Descubrir» (antes «Destacados»), dedicada a los cuadernos públicos, esa vista se mantiene y lo que se oculta es la barra de la extensión (búsqueda, filtros y selección). La pestaña se reconoce por la estructura de la página, no por su nombre, así que el cambio de nombre o de idioma no le afecta.
 - 🚀 **Acceso rápido:** haz clic en el icono de la extensión desde cualquier página para abrir Gemini Notebook en una nueva pestaña al instante.
 - ⚡ **Interfaz nativa:** diseñada para ofrecer una experiencia de uso con funciones ampliadas que se sientan como nativas de Gemini Notebook, sin romper tu flujo de trabajo.
 
 ---
 
 ## 🧰 Organización avanzada
+
+### 🔍 Búsqueda y filtros
+- El cuadro **Buscar cuadernos o etiquetas** busca en el **título de cada cuaderno y en todas sus etiquetas**, incluidas las que quedan ocultas tras «+N».
+- No distingue mayúsculas ni acentos y encuentra también partes de palabras («tic» encuentra «Matemáticas»).
+- Con varias palabras, cada una se busca por separado y deben aparecer todas, en cualquier orden («2026 proyecto» encuentra «Proyecto final 2026»).
+- **Esc** o el botón ✕ del cuadro vacían la búsqueda.
+- Las **pastillas de etiqueta** situadas bajo el cuadro filtran por etiqueta. Con varias activas, **Y** muestra los cuadernos que las tienen todas y **O**, los que tienen alguna. La búsqueda y los filtros se pueden combinar.
 
 ### ✅ Etiquetado múltiple
 1. Pulsa **Seleccionar** en la barra de la extensión. Aparece una barra flotante en la parte inferior.
@@ -108,7 +115,7 @@ NotebookLM Organizer integra un motor de sincronización adaptativo que detecta 
 Debido a que Google Chrome puede eliminar los datos de sincronización al desinstalar una extensión cargada manualmente (Modo Dev), se ha implementado un sistema de **redundancia dual** y un **asistente de resolución de conflictos**.
 
 ### 🛠️ Modos de seguridad en desarrollo (instalación manual)
-Mientras la extensión se use en modo de desarrollo, dispondrás de tres niveles de protección configurables desde la sección **Avanzado** (desplegable) del modal de gestión de etiquetas:
+Mientras la extensión se use en modo de desarrollo, dispondrás de tres niveles de protección configurables desde la sección desplegable **«Modo de desarrollo activo»** del panel de gestión de etiquetas:
 
 <p align="center">
   <img src="assets/modos-sync-dev-es.png" alt="Modos de sincronización">
@@ -131,7 +138,7 @@ Cuando se detecta una inconsistencia, la extensión muestra un diálogo detallad
 
 Durante el desarrollo de esta extensión, se planteó una decisión de diseño crítica: ¿cómo evitar que Google borre los datos de sincronización al desinstalar la versión de desarrollo?
 
-Una solución rápida hubiera sido registrar la extensión en la Chrome Web Store para obtener un **ID oficial**. Al usar este identificador en la versión de desarrollo, los datos en la nube quedarían "anclados" a la versión de la tienda, de modo que el navegador dejaría de eliminarlos automáticamente al desinstalalar una instancia local. Sin embargo, se optó por **no hacerlo** para priorizar los siguientes principios:
+Una solución rápida hubiera sido registrar la extensión en la Chrome Web Store para obtener un **ID oficial**. Al usar este identificador en la versión de desarrollo, los datos en la nube quedarían "anclados" a la versión de la tienda, de modo que el navegador dejaría de eliminarlos automáticamente al desinstalar una instancia local. Sin embargo, se optó por **no hacerlo** para priorizar los siguientes principios:
 
 1.  **Soberanía y código abierto:** al no depender de un ID asignado por una tienda propietaria, el proyecto es 100% independiente y portable. Cualquier persona puede clonar el repositorio y tener un sistema funcional y seguro sin pasar por el control de una plataforma externa.
 2.  **Arquitectura de resiliencia:** en lugar de confiar en una política de base de datos de terceros (que puede cambiar), se ha construido una infraestructura de seguridad propia. La extensión es ahora un sistema autónomo capaz de autorrepararse.
@@ -143,7 +150,7 @@ En resumen: se ha elegido el camino de la **maestría técnica** sobre el camino
 
 ## 🏪 Funcionamiento en modo oficial (Chrome Web Store)
 
-Si la extensión se instala desde la tienda oficial, detecta el entorno y simplifica su lógica al máximo. En este modo, confia plenamente en la infraestructura nativa de Google Sync y opera de forma ligera sin necesidad de mantener backups locales redundantes ni mostrar diálogos de conflicto.
+Si la extensión se instala desde la tienda oficial, detecta el entorno y simplifica su lógica al máximo. En este modo, confía plenamente en la infraestructura nativa de Google Sync y opera de forma ligera sin necesidad de mantener backups locales redundantes ni mostrar diálogos de conflicto.
 
 **Importante:** al desinstalar la extensión oficial, Google elimina automáticamente todos los datos sincronizados asociados a tu cuenta para esta extensión. Si deseas conservar tu organización para una instalación futura, realiza siempre una exportación manual antes de eliminarla.
 
@@ -153,7 +160,7 @@ Si la extensión se instala desde la tienda oficial, detecta el entorno y simpli
 
 -   **Exportación manual (botón de exportar del modal de gestión):** independientemente del modo de instalación, se recomienda realizar copias de seguridad periódicas descargando la configuración en formato JSON. Es la red de seguridad definitiva por si todo lo demás falla. *Shit happens* 😅.
 -   **Conserva siempre un "guardián" (solo modo dev):** mientras mantengas la extensión instalada en al menos un dispositivo, tus datos podrán recuperarse automáticamente en los demás gracias a la redundancia local.
--   **Actualizaciones (solo modo dev):** para instalar una nueva versión del código, no es necesario desinstalar la extensión. Simplemente sobreescribe los archivos en tu carpeta local y pulsa el botón de recarga en `chrome://extensions`.
+-   **Actualizaciones (solo modo dev):** para instalar una nueva versión del código, no es necesario desinstalar la extensión. Simplemente sobrescribe los archivos en tu carpeta local y pulsa el botón de recarga en `chrome://extensions`.
 
 ---
 

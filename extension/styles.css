@@ -87,14 +87,16 @@ body.dark-theme {
   flex-shrink: 0;
 }
 
-/* Tarjetas de "Cuadernos recientes", "Fijados" y el interior de las colecciones (misma geometría).
+/* Tarjetas de "Cuadernos recientes" (también en "Ver más"), "Fijados" y el interior de las colecciones
+   (misma geometría).
    Google lleva título y fecha al fondo de la tarjeta, con la fecha a
    la altura del globo de cuaderno compartido (caja de 24px a 28px del borde inferior). Con etiquetas,
    estas ocupan esa última línea alineadas con el globo (-4px compensa el relleno inferior de 32px) y
    título y fecha suben lo justo, sin comprimirse. Sin etiquetas, la tarjeta queda como la diseña Google. */
 .my-projects-container project-button mat-card > .nblm-tag-container,
 .pinned-projects-container project-button mat-card > .nblm-tag-container,
-.collection-expanded-section project-button mat-card > .nblm-tag-container {
+.collection-expanded-section project-button mat-card > .nblm-tag-container,
+homepage-subsection-page project-button mat-card > .nblm-tag-container {
   height: 24px;
   padding: 0;
   margin: 8px 0 -4px;
@@ -103,7 +105,8 @@ body.dark-theme {
 
 .my-projects-container project-button mat-card > .nblm-tag-container:empty,
 .pinned-projects-container project-button mat-card > .nblm-tag-container:empty,
-.collection-expanded-section project-button mat-card > .nblm-tag-container:empty {
+.collection-expanded-section project-button mat-card > .nblm-tag-container:empty,
+homepage-subsection-page project-button mat-card > .nblm-tag-container:empty {
   display: none;
 }
 
@@ -229,11 +232,31 @@ body.nblm-selecting td .nblm-tag-container {
 }
 
 /* Estilos de la barra de búsqueda */
+/* Cuadro de búsqueda con lupa (mismo aspecto que Classroom Organizer) */
+.nblm-search {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.nblm-search-icon {
+    position: absolute;
+    left: 12px;
+    display: flex;
+    color: var(--nblm-secondary-text);
+    pointer-events: none;
+}
+
 .nblm-search-input {
+    width: 100%;
+    box-sizing: border-box;
     border: 1px solid var(--nblm-border);
-    border-radius: 8px;
-    padding: 8px 16px;
+    border-radius: 20px;
+    padding: 8px 16px 8px 40px;
     font-size: 14px;
+    font-family: inherit;
     outline: none;
     transition: border-color 0.2s;
     background-color: var(--nblm-bg-input);
@@ -242,7 +265,7 @@ body.nblm-selecting td .nblm-tag-container {
 
 .nblm-search-input:focus {
     border-color: var(--nblm-primary);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 0 0 1px var(--nblm-primary);
 }
 
 /* Nota: .nblm-tag usa color inline en style, pero definimos variables por si acaso */

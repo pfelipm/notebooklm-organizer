@@ -19,7 +19,7 @@
   "alert_collision_title": { "message": "Action blocked for safety" },
   "alert_collision_msg": { "message": "There are multiple notebooks with identical name, sources, and date in this list.<br><br>To avoid errors, rename one of the notebooks or use the <b>thumbnail view</b> to tag them." },
   "alert_understood": { "message": "Understood" },
-  "search_placeholder": { "message": "Search notebooks..." },
+  "search_placeholder": { "message": "Search notebooks or tags..." },
   "btn_manage_tags": { "message": "Manage tags" },
   "filter_mode_and": { "message": "AND" },
   "filter_mode_or": { "message": "OR" },

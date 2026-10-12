@@ -19,7 +19,7 @@
   "alert_collision_title": { "message": "Acción bloqueada por seguridad" },
   "alert_collision_msg": { "message": "Existen varios cuadernos con nombre, fuentes y fecha idénticos en esta lista.<br><br>Para evitar errores, renombra uno de los cuadernos o utiliza la <b>vista de miniaturas</b> para etiquetarlos." },
   "alert_understood": { "message": "Entendido" },
-  "search_placeholder": { "message": "Buscar cuadernos..." },
+  "search_placeholder": { "message": "Buscar cuadernos o etiquetas..." },
   "btn_manage_tags": { "message": "Gestionar etiquetas" },
   "filter_mode_and": { "message": "Y" },
   "filter_mode_or": { "message": "O" },

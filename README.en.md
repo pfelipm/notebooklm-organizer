@@ -13,16 +13,16 @@
 Privacy is at the core of this extension. NotebookLM Organizer is built following the **principle of least privilege**:
 
 - **No Content Access:** The extension **never** reads, accesses, or processes the content of your notes, documents, or sources within your notebooks.
-- **Organizational Metadata Only:** It only reads the visible text of each notebook's card in the list, such as the **notebook name, source count, and date**. This data is used strictly to identify the notebook, link it to your tags, and enable search.
+- **Organizational Metadata Only:** For each notebook in the list, it only reads its **name, source count, and the internal identifier in its link**. This data is used strictly to identify the notebook and link it to your tags; search only uses the notebook name and its tags.
 - **No Data Manipulation:** The extension does not modify or manipulate your notebooks in any way. It only adds a visual organization layer on top of the existing Google UI.
-- **Your Data is Yours:** All configurations are stored in your Google account (via Chrome Sync), and only you have access to them.
+- **Your Data is Yours:** Your tags and preferences are stored in your Google account (via Chrome Sync), and only you have access to them.
 
 ---
 
 ## ✨ Key Features
 
 - 🏷️ **Color-Coded Tags:** Create custom tags with a vibrant color palette to categorize your projects visually.
-- 🔍 **Advanced Filtering:** Find notebooks instantly by combining text search and tag filters with **AND** or **OR** logic.
+- 🔍 **Search & Advanced Filtering:** Find notebooks instantly by searching their titles and tags (ignoring case and accents) and combining it with tag filters using **AND** or **OR** logic.
 - ✅ **Bulk Tagging:** Select several notebooks (click, Shift+click, or "Select visible") and add or remove tags on all of them at once, with undo.
 - ⭐ **Priority Tags:** Star the tags you always want to see first on every notebook.
 - 📐 **Space-Aware Tags:** Each notebook shows as many tags as fit, grouping the rest under "+N", in both grid and list views.
@@ -31,14 +31,21 @@ Privacy is at the core of this extension. NotebookLM Organizer is built followin
 - 🌓 **Automatic Dark Mode:** The interface automatically adapts to the theme (light or dark) set in Gemini Notebook, fully respecting your visual preference.
 - 🔄 **Automatic Sync:** Your tags and preferences are automatically synced across all your devices via your Chrome account.
 - 💾 **Granular Backup:** Export and import your settings in JSON format, allowing you to choose which elements to restore.
-- 🌐 **Multi-language Support:** Interface fully localized in **English, Spanish, and Catalan**, with instant language switching from the UI.
-- 💡 **Featured Notebooks Handling:** For cleanliness and convenience, the extension hides the limited preview of featured notebooks in the main "All" tab and automatically disables itself when entering the dedicated "Featured" tab.
+- 🌐 **Multi-language Support:** Interface fully localized in **English, Spanish, and Catalan**, with instant language switching from the tag management panel.
+- 💡 **Featured Notebooks Handling:** For a cleaner view, the extension hides the featured notebooks preview that Google shows in the main "All" tab. In the "Discover" tab (formerly "Featured"), dedicated to public notebooks, that content is left untouched and the extension bar (search, filters, and selection) is hidden instead. The tab is recognized by the page structure rather than by its name, so renaming it or changing the language does not affect it.
 - 🚀 **Quick Access:** Click the extension icon from any webpage to open Gemini Notebook in a new tab instantly.
 - ⚡ **Native Interface:** Designed to provide an extended organization and search experience that feels like a native Gemini Notebook feature, without disrupting your workflow.
 
 ---
 
 ## 🧰 Advanced Organization
+
+### 🔍 Search and Filters
+- The **Search notebooks or tags** box looks in **each notebook's title and all of its tags**, including those hidden behind "+N".
+- It ignores case and accents and also matches parts of words ("tic" finds "Mathematics").
+- With several words, each one is searched separately and all of them must appear, in any order ("2026 project" finds "Final project 2026").
+- **Esc** or the box's ✕ button clears the search.
+- The **tag chips** below the box filter by tag. With several active, **AND** shows notebooks that have all of them and **OR** those that have any. Search and filters can be combined.
 
 ### ✅ Bulk Tagging
 1. Click **Select** in the extension bar. A floating bar appears at the bottom.
@@ -108,7 +115,7 @@ NotebookLM Organizer features an adaptive synchronization engine that automatica
 Because Google Chrome may delete sync data when uninstalling a manually loaded extension (Dev Mode), a **Dual Redundancy** system and a **Conflict Resolution Assistant** have been implemented.
 
 ### 🛠️ Security Modes in Development (Manual Installation)
-While the extension is used in development mode, you will have three levels of protection configurable from the collapsible **Advanced** section of the tag management modal:
+While the extension is used in development mode, you will have three levels of protection configurable from the collapsible **"Development mode active"** section of the tag management panel:
 
 <p align="center">
   <img src="assets/modos-sync-dev-en.png" alt="Sync modes">

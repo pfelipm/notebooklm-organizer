@@ -296,6 +296,22 @@ function normalizeString(str) {
               .trim();
 }
 
+// Texto normalizado para buscar: sin mayúsculas ni acentos (mismo criterio que Classroom Organizer)
+function normalizeSearch(str) {
+    return String(str || '').toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+// La búsqueda mira el título del cuaderno y todas sus etiquetas (también las ocultas tras "+N"), sin
+// acentos ni mayúsculas, y encuentra partes de palabras («tic» → Matemáticas). Con varias palabras, cada
+// una se busca por separado y tienen que aparecer todas, en cualquier orden.
+function matchesSearchQuery(node, tags) {
+    const terms = normalizeSearch(searchQuery).split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return true;
+    const title = node.querySelector('.project-button-title, .project-table-title')?.textContent || '';
+    const haystack = [title, ...tags].map(normalizeSearch);
+    return terms.every(term => haystack.some(text => text.includes(term)));
+}
+
 // 3. METADATOS Y HUELLA
 function getNotebookFingerprint(notebook) {
     const titleEl = notebook.querySelector('.project-button-title, .project-table-title');
@@ -417,7 +433,7 @@ function processNewNodes() {
 
   // Los cuadernos que aparecen después (al volver de un cuaderno, "Ver más"...) también deben
   // respetar los filtros y la búsqueda activos
-  if (toProcess.length > 0 && (activeFilters.size > 0 || searchQuery)) applyFilters();
+  if (toProcess.length > 0 && (activeFilters.size > 0 || searchQuery.trim())) applyFilters();
   if (toProcess.length > 0) {
       syncSelectionUI();
       fitTags(toProcess.map(({ node }) => node.querySelector('.nblm-tag-container')).filter(Boolean));
@@ -666,7 +682,10 @@ function handleSelectionKeys(e) {
     if (!selectionMode) return;
     // Con un diálogo abierto, Escape y las teclas le pertenecen a él
     if (document.querySelector('.nblm-modal-overlay')) return;
-    if (e.key === 'Escape') { e.stopImmediatePropagation(); setSelectionMode(false); return; }
+    if (e.key === 'Escape') {
+        if (e.target.classList?.contains('nblm-search-input') && e.target.value) return; // Lo gestiona el cuadro
+        e.stopImmediatePropagation(); setSelectionMode(false); return;
+    }
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const node = e.target.closest?.('.nblm-processed');
     if (!node) return;
@@ -740,12 +759,17 @@ function showSnackbar(message, { actionLabel, onAction, duration = 6000 } = {}) 
     startTimer();
 }
 
+// Pestaña de cuadernos públicos ("Descubrir", antes "Destacados"): se reconoce por su estructura, no por
+// el nombre de la pestaña (Google la renombró y el texto depende del idioma). Es la única vista en la que
+// la página solo contiene el bloque de destacados, sin secciones de cuadernos propios.
+function isFeaturedTab() {
+    const container = document.querySelector('.all-projects-container');
+    if (!container || !container.querySelector(':scope > .featured-projects-container')) return false;
+    return !container.querySelector(':scope > .my-projects-container, :scope > .pinned-projects-container, :scope > homepage-subsection-page');
+}
+
 function updateTabContext() {
-    const activeToggle = document.querySelector('.mat-button-toggle-checked');
-    const activeBtn = activeToggle ? activeToggle.querySelector('button') : document.querySelector('button[aria-checked="true"]');
-    if (!activeBtn) return;
-    const text = activeBtn.innerText.toLowerCase();
-    const isFeatured = text.includes('destacado') || text.includes('featured') || text.includes('picks') || text.includes('destacat');
+    const isFeatured = isFeaturedTab();
     if (isFeatured) document.body.classList.add('nblm-in-featured-tab');
     else document.body.classList.remove('nblm-in-featured-tab');
     const tools = document.querySelector('.nblm-tools-container');
@@ -757,7 +781,10 @@ function refreshInjectedTexts() {
     const tools = document.querySelector('.nblm-tools-container');
     if (tools) {
         const searchInput = tools.querySelector('.nblm-search-input');
-        if (searchInput) searchInput.placeholder = t('search_placeholder');
+        if (searchInput) {
+            searchInput.placeholder = t('search_placeholder');
+            searchInput.setAttribute('aria-label', t('search_placeholder'));
+        }
         const manageBtn = tools.querySelector('.nblm-manage-btn:not(.nblm-select-btn)');
         if (manageBtn) manageBtn.innerText = t('btn_manage_tags');
         setSelectionMode(selectionMode); // Recrea la barra flotante con el idioma nuevo
@@ -765,15 +792,16 @@ function refreshInjectedTexts() {
 }
 
 // Elemento antes del cual va la barra:
-// - Dentro de una colección: justo después de su cabecera (título y "Editar"), sobre los cuadernos.
+// - Dentro de una colección o en "Ver más" de "Cuadernos recientes": justo después de su cabecera
+//   (título y "Editar", o "← Cuadernos recientes"), sobre los cuadernos.
 // - En las pestañas con lista de cuadernos: antes de la sección principal ("Cuadernos recientes",
 //   "Mis cuadernos"...). En vista de lista, "Fijados" también es un .my-projects-container, pero con
 //   cabecera de fijados.
 function findToolsAnchor() {
-  const collectionHeader = document.querySelector('.collection-expanded-section > .collection-expanded-header');
-  if (collectionHeader) {
-      return [...collectionHeader.parentElement.children]
-          .find(child => child !== collectionHeader && !child.classList.contains('nblm-tools-container')) || null;
+  const sectionHeader = document.querySelector('.collection-expanded-section > .collection-expanded-header, homepage-subsection-page > .results-header');
+  if (sectionHeader) {
+      return [...sectionHeader.parentElement.children]
+          .find(child => child !== sectionHeader && !child.classList.contains('nblm-tools-container')) || null;
   }
   const container = document.querySelector('.all-projects-container');
   if (!container) return null;
@@ -813,20 +841,32 @@ function injectSearchTools() {
   tools.className = 'nblm-tools-container';
   tools.innerHTML = `
     <div class="nblm-header-row">
-        <input type="text" class="nblm-search-input" style="flex:1; margin-right:12px;" placeholder="${t('search_placeholder')}">
+        <div class="nblm-search">
+            <span class="nblm-search-icon">${icon('search', 20)}</span>
+            <input type="search" class="nblm-search-input" placeholder="${t('search_placeholder')}" aria-label="${t('search_placeholder')}">
+        </div>
         <button type="button" class="nblm-manage-btn nblm-select-btn" aria-pressed="false">${t('btn_select')}</button>
         <button type="button" class="nblm-manage-btn">${t('btn_manage_tags')}</button>
     </div>
     <div class="nblm-filter-tags" id="nblm-filter-tags"></div>
   `;
   // Al volver de un cuaderno se crea una barra nueva: mantenemos la búsqueda que había
-  tools.querySelector('input').value = searchQuery;
+  const searchInput = tools.querySelector('.nblm-search-input');
+  searchInput.value = searchQuery;
   let searchTimeout = null;
-  tools.querySelector('input').oninput = (e) => {
-      searchQuery = e.target.value.toLowerCase();
+  searchInput.oninput = (e) => {
+      searchQuery = e.target.value;
       // Agrupamos las pulsaciones: filtramos cuando el usuario hace una pausa al escribir
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => applyFilters(), 150);
+  };
+  // Escape vacía la búsqueda (con texto); sin texto, Escape sigue su curso (p. ej., salir del modo selección)
+  searchInput.onkeydown = (e) => {
+      if (e.key === 'Escape' && searchInput.value) {
+          e.stopPropagation();
+          clearTimeout(searchTimeout);
+          searchInput.value = ''; searchQuery = ''; applyFilters();
+      }
   };
   tools.querySelector('.nblm-select-btn').onclick = () => setSelectionMode(!selectionMode);
   tools.querySelector('.nblm-manage-btn:not(.nblm-select-btn)').onclick = showManagementModal;
@@ -1248,7 +1288,7 @@ function applyFilters(scan = scanNotebooks()) {
   document.querySelectorAll('.nblm-processed').forEach(node => {
     const id = getResolvedId(node, scan.isCollision(node));
     const tags = notebookTags[id] || [];
-    const matchesSearch = !searchQuery || node.innerText.toLowerCase().includes(searchQuery);
+    const matchesSearch = matchesSearchQuery(node, tags);
     let matchesTags = true;
     if (filterArray.length > 0) {
         if (filterMode === 'AND') matchesTags = filterArray.every(f => tags.includes(f));
